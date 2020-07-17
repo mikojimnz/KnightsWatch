@@ -1,0 +1,12 @@
+{
+  "praw": "Default",
+  "sub": "",
+  "skipExisting": true,
+  "n_epoch": 600,
+  "batch_size": 8,
+  "keyBindings": {
+    "acceptable": "a",
+    "neutral": "n",
+    "warning": "w"
+  }
+}
