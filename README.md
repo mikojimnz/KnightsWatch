@@ -38,7 +38,4 @@ Manually edit the `training/intents.json` file and paste in comments in the appr
 ## Notes
 
 - Comments are sanitized of all punctuation and potential offending characters.
-
-## Future Projects
- - Integrate Reddit ModTools
- - Discord integration
+- Training data and models have been removed for public release.
