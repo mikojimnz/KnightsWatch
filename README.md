@@ -10,8 +10,9 @@ Based from [python chatbot](https://techwithtim.net/tutorials/ai-chatbot/part-1/
 1. Requires Python 3.6. Virtual environment recommended.
 2. Use `pip3 install -r requirements.txt` to install dependencies.
 3. Run `python3 generate_model.py` to build model.
-4. Configure the `praw.ini` file, located at `env/lib/python3.6/site-packages/praw`, with your bot tokens.
-5. Edit the `settings.json` to match your PRAW configuration.
+4. Configure the `praw.ini` file, located at `env/lib/python3.6/site-packages/praw`, with your bot tokens. [PRAW Documentation](https://praw.readthedocs.io/en/latest/getting_started/configuration/prawini.html)
+5. Edit the `settings.json` to match your PRAW configuration. Copy the sample configuration from the `sample-config` folder.
+6. Create the `intents.json` file in the `training` folder. You can copy the sample configuration from the `sample-config` folder or modify the categories and labels.
 
 ## Training
 
