@@ -1,0 +1,19 @@
+{
+  "intents": [
+    {
+      "tag": "acceptable",
+      "patterns": [],
+      "classification": "ACCEPTABLE"
+    },
+    {
+      "tag": "neutral",
+      "patterns": [],
+      "classification": "NEUTRAL"
+    },
+    {
+      "tag": "warning",
+      "patterns": [],
+      "classification": "POSSIBLE WARNING"
+    }
+  ]
+}
