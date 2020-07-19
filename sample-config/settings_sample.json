@@ -2,6 +2,7 @@
   "praw": "Default",
   "sub": "",
   "skipExisting": true,
+  "confidence": 0.7,
   "n_epoch": 600,
   "batch_size": 8,
   "keyBindings": {

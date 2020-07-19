@@ -90,7 +90,7 @@ def main():
             tag = labels[results_index]
             confidence = results[results_index] * 100
 
-            if (results[results_index] > 0.7):
+            if (results[results_index] > cfg['confidence']):
                 for tg in data["intents"]:
                     if tg['tag'] == tag:
                         classification = tg['classification']
