@@ -30,7 +30,7 @@ color = {
 
 with open("settings.json") as jsonFile1:
     cfg = json.load(jsonFile1)
-    
+
 with open('training/intents.json') as file:
     data = json.load(file)
 
@@ -80,21 +80,28 @@ def chat():
             if (inp == "quit") :
                 break
 
-            results = model.predict([bag_of_words(inp, words)])[0]
-            results_index = numpy.argmax(results)
-            tag = labels[results_index]
-            confidence = results[results_index] * 100
+            print(f'\n{inp}\n')
 
-            if (results[results_index] > cfg['model']['confidence']):
-                for tg in data["intents"]:
-                    if tg['tag'] == tag:
-                        classification = tg['classification']
-
-                print(f'\n{inp}\n')
-                cprint(f'    [{confidence:0.3f}% {classification}]\n', color[classification])
+            category = input("    Category: ")
+            if (category.lower() == cfg['keyBindings']['acceptable']):
+                cat = 0
+                print("    ACCEPTABLE\n")
+            elif (category.lower() == cfg['keyBindings']['neutral']):
+                cat = 1
+                print("    NEUTRAL\n")
+            elif (category.lower() == cfg['keyBindings']['warning']):
+                cat = 2
+                print("    POSSIBLE WARNING\n")
             else:
-                print(f'\n{inp}\n')
-                cprint(f'    [UNSURE {confidence:0.3f}% {tag}]\n', 'cyan')
+                print("    Entry Rejected\n")
+                continue
+
+            with open("training/intents.json", "r+") as jsonFile2:
+                tmp = json.load(jsonFile2)
+                tmp['intents'][cat]['patterns'].append(inp)
+                jsonFile2.seek(0)
+                json.dump(tmp, jsonFile2)
+                jsonFile2.truncate()
 
     except KeyboardInterrupt:
         sys.exit(1)

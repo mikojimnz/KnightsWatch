@@ -103,10 +103,10 @@ def main():
                         if tg['tag'] == tag:
                             classification = tg['classification']
 
-                    await realtime_ch.send(f'[{confidence:0.3f}% {classification}]\nBy: {user}\n{inp}\nhttp://reddit.com{link}')
+                    await realtime_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n\n```\n{comment.body}\n```\n<http://reddit.com{link}>')
 
                     if (classification == 'POSSIBLE WARNING'):
-                        await elevated_ch.send(f'[{confidence:0.3f}% {classification}]\nBy: {user}\n{inp}\nhttp://reddit.com{link}')
+                        await elevated_ch.send(f'**[{confidence:0.3f}% {classification} ❗️]** By: {user}\n\n```fix\n{comment.body}\n```\n<http://reddit.com{link}>')
 
                     if (cfg['debug']['outputResults']):
                         print(f'\n{inp}')
@@ -114,7 +114,7 @@ def main():
                         print(f'    By: {user}\n    http://reddit.com{link}\n')
 
                 else:
-                    await unsure_ch.send(f'[UNSURE {confidence:0.3f}% {classification}]\nBy: {user}\n{inp}\nhttp://reddit.com{link}')
+                    await unsure_ch.send(f'**[UNSURE {confidence:0.3f}% {classification} ❓]** By: {user}\n\n```\n{comment.body}\n```\n<http://reddit.com{link}>')
 
                     if (cfg['debug']['outputResults']):
                         print(f'\n{inp}')
