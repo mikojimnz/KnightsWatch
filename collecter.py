@@ -17,13 +17,13 @@ def main():
     with open("settings.json") as jsonFile1:
         cfg = json.load(jsonFile1)
 
-    reddit = praw.Reddit(cfg['praw'])
-    sub = reddit.subreddit(cfg['sub'])
+    reddit = praw.Reddit(cfg['praw']['cred'])
+    sub = reddit.subreddit(cfg['praw']['sub'])
 
     os.system('cls' if os.name == 'nt' else 'clear')
     print("\n    Collector Started\n")
 
-    commentStream = sub.stream.comments(skip_existing=cfg['skipExisting'])
+    commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'])
     try:
         for comment in commentStream:
             raw = " ".join(comment.body.lower().splitlines())

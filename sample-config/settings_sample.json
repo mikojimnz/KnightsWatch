@@ -1,13 +1,28 @@
 {
-  "praw": "Default",
-  "sub": "",
-  "skipExisting": true,
-  "confidence": 0.7,
-  "n_epoch": 600,
-  "batch_size": 8,
+  "debug": {
+    "outputResults": true
+  },
+  "discord": {
+    "clientID": "",
+    "channels": {
+      "elevated": 000,
+      "realtime": 000,
+      "unsure":0
+    }
+  },
   "keyBindings": {
     "acceptable": "a",
     "neutral": "n",
     "warning": "w"
+  },
+  "model": {
+    "batch_size": 8,
+    "confidence": 0.7,
+    "n_epoch": 600
+  },
+  "praw": {
+    "cred": "",
+    "skipExisting": true,
+    "sub": ""
   }
 }

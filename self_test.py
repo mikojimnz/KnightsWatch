@@ -80,7 +80,7 @@ def chat():
             tag = labels[results_index]
             confidence = results[results_index] * 100
 
-            if (results[results_index] > cfg['confidence']):
+            if (results[results_index] > cfg['model']['confidence']):
                 for tg in data["intents"]:
                     if tg['tag'] == tag:
                         classification = tg['classification']

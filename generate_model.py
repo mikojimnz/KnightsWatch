@@ -83,5 +83,5 @@ net = tflearn.regression(net)
 
 model = tflearn.DNN(net, tensorboard_verbose=3, tensorboard_dir=f'./logs/{modelName}')
 
-model.fit(training, output, n_epoch=cfg['n_epoch'], batch_size=cfg['batch_size'], show_metric=True)
+model.fit(training, output, n_epoch=cfg['model']['n_epoch'], batch_size=cfg['model']['batch_size'], show_metric=True)
 model.save("model/model.tflearn")

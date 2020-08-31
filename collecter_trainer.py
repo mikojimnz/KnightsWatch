@@ -42,8 +42,8 @@ def main():
 
         return numpy.array(bag)
 
-    reddit = praw.Reddit(cfg['praw'])
-    sub = reddit.subreddit(cfg['sub'])
+    reddit = praw.Reddit(cfg['praw']['cred'])
+    sub = reddit.subreddit(cfg['praw']['sub'])
 
     color = {
     "ACCEPTABLE": "green",
@@ -69,7 +69,7 @@ def main():
     os.system('cls' if os.name == 'nt' else 'clear')
     print("\n    Ready\n")
 
-    commentStream = sub.stream.comments(skip_existing=cfg['skipExisting'])
+    commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'])
 
     try:
         for comment in commentStream:
@@ -90,7 +90,7 @@ def main():
             tag = labels[results_index]
             confidence = results[results_index] * 100
 
-            if (results[results_index] > cfg['confidence']):
+            if (results[results_index] > cfg['model']['confidence']):
                 for tg in data["intents"]:
                     if tg['tag'] == tag:
                         classification = tg['classification']
