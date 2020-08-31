@@ -46,8 +46,16 @@ This method will gather the latest comments and output them. It will display wha
 
 ### Method 3
 
-Manually edit the `training/intents.json` file and paste in comments in the appropriate categories: Acceptable, Neutral, or Warning.
+Manual entry method.
 
+1. Run the `self_assign.py` script.
+2. Enter a comment, it will be sanitized and re-outputted.
+3. Type:
+	- a: If the comment is acceptable.
+	- n: If the comment is neutral.
+	- w: If the comment is considered to be  a warning.
+	- Type any other character to skip the entry.
+4. Press Enter to submit.
 
 ## Notes
 
