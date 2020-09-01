@@ -3,6 +3,7 @@
     "outputResults": true
   },
   "discord": {
+    "cmdPrefix": "!",
     "clientID": "",
     "channels": {
       "elevated": 000,

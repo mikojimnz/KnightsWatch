@@ -1,3 +1,4 @@
+import asyncio
 import discord
 import json
 import nltk
@@ -14,6 +15,7 @@ import tflearn
 import time
 import traceback
 
+from discord.ext import commands
 from nltk.stem.lancaster import LancasterStemmer
 from termcolor import colored, cprint
 from time import sleep
@@ -58,10 +60,7 @@ def main():
     model = tflearn.DNN(net)
     model.load("model/model.tflearn")
 
-    reddit = praw.Reddit(cfg['praw']['cred'])
-    sub = reddit.subreddit(cfg['praw']['sub'])
-    commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'])
-    client = discord.Client()
+    client = commands.Bot(command_prefix=cfg['discord']['cmdPrefix'])
 
     color = {
     "ACCEPTABLE": "green",
@@ -70,67 +69,119 @@ def main():
     }
 
     os.system('cls' if os.name == 'nt' else 'clear')
-    cprint("\n    Ready\n", 'green')
 
     async def read_comments():
         await client.wait_until_ready()
+
+        reddit = praw.Reddit(cfg['praw']['cred'])
+        sub = reddit.subreddit(cfg['praw']['sub'])
+        commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
 
         elevated_ch = client.get_channel(cfg['discord']['channels']['elevated'])
         realtime_ch = client.get_channel(cfg['discord']['channels']['realtime'])
         unsure_ch = client.get_channel(cfg['discord']['channels']['unsure'])
 
-        try:
-            for comment in commentStream:
-                raw = " ".join(comment.body.lower().splitlines())
-                raw = re.sub(CONST_REG, ' ', raw, flags=re.MULTILINE)
-                raw = re.sub(r'([\'’])', '', raw)
-                raw = re.sub(r'[^a-z\s]', ' ', raw)
-                raw = re.sub(r'[ ]+', ' ', raw.strip())
-                inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
-                user = comment.author.name
-                link = comment.permalink
+        cprint("\n    Comment Stream Ready\n", 'green')
 
-                if (len(inp) <= 0):
-                    continue
+        while not client.is_closed():
+            try:
+                for comment in commentStream:
+                    if comment is None:
+                        break
 
-                results = model.predict([bag_of_words(inp, words)])[0]
-                results_index = numpy.argmax(results)
-                tag = labels[results_index]
-                confidence = results[results_index] * 100
+                    raw = " ".join(comment.body.lower().splitlines())
+                    raw = re.sub(CONST_REG, ' ', raw, flags=re.MULTILINE)
+                    raw = re.sub(r'([\'’])', '', raw)
+                    raw = re.sub(r'[^a-z\s]', ' ', raw)
+                    raw = re.sub(r'[ ]+', ' ', raw.strip())
+                    inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
+                    user = comment.author.name
+                    link = comment.permalink
 
-                if (results[results_index] > cfg['model']['confidence']):
-                    for tg in data["intents"]:
-                        if tg['tag'] == tag:
-                            classification = tg['classification']
+                    if (len(inp) <= 0):
+                        continue
 
-                    await realtime_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n\n```\n{comment.body}\n```\n<http://reddit.com{link}>')
+                    results = model.predict([bag_of_words(inp, words)])[0]
+                    results_index = numpy.argmax(results)
+                    tag = labels[results_index]
+                    confidence = results[results_index] * 100
 
-                    if (classification == 'POSSIBLE WARNING'):
-                        await elevated_ch.send(f'**[{confidence:0.3f}% {classification} ❗️]** By: {user}\n\n```fix\n{comment.body}\n```\n<http://reddit.com{link}>')
+                    if (results[results_index] > cfg['model']['confidence']):
+                        for tg in data["intents"]:
+                            if tg['tag'] == tag:
+                                classification = tg['classification']
 
-                    if (cfg['debug']['outputResults']):
-                        print(f'\n{inp}')
-                        cprint(f'\n    [{confidence:0.3f}% {classification}]', color[classification])
-                        print(f'    By: {user}\n    http://reddit.com{link}\n')
+                        if (classification == 'POSSIBLE WARNING'):
+                            await elevated_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```fix\n{comment.body}\n```\n<http://reddit.com{link}>')
+                        else:
+                            await realtime_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```\n{comment.body}\n```\n<http://reddit.com{link}>')
 
-                else:
-                    await unsure_ch.send(f'**[UNSURE {confidence:0.3f}% {classification} ❓]** By: {user}\n\n```\n{comment.body}\n```\n<http://reddit.com{link}>')
+                        if (cfg['debug']['outputResults']):
+                            print(f'\n{inp}')
+                            cprint(f'\n    [{confidence:0.3f}% {classification}]', color[classification])
+                            print(f'    By: {user}\n    http://reddit.com{link}\n')
 
-                    if (cfg['debug']['outputResults']):
-                        print(f'\n{inp}')
-                        cprint(f'\n    [UNSURE {confidence:0.3f}% {tag}]', 'cyan')
-                        print(f'    By: {user}\n    http://reddit.com{link}\n')
+                    else:
+                        await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tg['classification']}]** By: {user}\n```\n{comment.body}\n```\n<http://reddit.com{link}>")
 
-        except KeyboardInterrupt:
-            sys.exit(1)
-        except Exception as e:
-            print(f'EXCEPTION:\n{e}')
-            sleep(10)
+                        if (cfg['debug']['outputResults']):
+                            print(f'\n{inp}')
+                            cprint(f'\n    [UNSURE {confidence:0.3f}% {tag}]', 'cyan')
+                            print(f'    By: {user}\n    http://reddit.com{link}\n')
+
+            except KeyboardInterrupt:
+                sys.exit(1)
+            except Exception as e:
+                print(f'EXCEPTION:\n{e}')
+
+            await asyncio.sleep(1)
 
     @client.event
     async def on_ready():
         cprint(f'    Discord connection established, logged in as {client.user}', 'green')
         client.loop.create_task(read_comments())
+
+    @client.command()
+    async def test(ctx):
+        print(ctx.message.content)
+
+    @client.event
+    async def on_reaction_add(reaction, user):
+        src = reaction.message.channel.id
+
+        if re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content) is None:
+            return
+
+        if reaction.emoji == "✅":
+            cat = 0
+        elif reaction.emoji == "🆗":
+            cat = 1
+        elif reaction.emoji == "❌":
+            cat = 2
+        else:
+            await reaction.message.channel.send(f'Unknown signifer. Remove reaction to reclassify.')
+            return
+
+        if len(reaction.message.reactions) > 1:
+            await reaction.message.channel.send(f'Comment has already been reclassaified.')
+            return
+
+        raw = re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content.lower())
+        raw = re.sub(CONST_REG, ' ', raw.group(1))
+        raw = re.sub(r'([\'’])', '', raw)
+        raw = re.sub(r'[^a-z\s]', ' ', raw)
+        raw = re.sub(r'[ ]+', ' ', raw.strip())
+        inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
+
+        with open("training/intents.json", "r+") as jsonFile2:
+            tmp = json.load(jsonFile2)
+            tmp['intents'][cat]['patterns'].append(inp)
+            jsonFile2.seek(0)
+            json.dump(tmp, jsonFile2)
+            jsonFile2.truncate()
+
+        await reaction.message.channel.send(f'Comment added to training data')
+        print(f'{reaction.emoji}: {inp}')
 
     client.run(cfg['discord']['clientID'])
 
