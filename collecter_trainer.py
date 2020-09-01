@@ -80,7 +80,7 @@ def main():
             raw = re.sub(r'[ ]+', ' ', raw.strip())
             inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
             user = comment.author.name
-            link = link.replace(re.search(r'/r/[\w]+/comments/[\w\d]+/([\w\d_]+)/[\w\d]+/', comment.permalink).group(1), '_', 1)
+            link = comment.permalink.replace(re.search(r'/r/[\w]+/comments/[\w\d]+/([\w\d_]+)/[\w\d]+/', comment.permalink).group(1), '_', 1)
 
             if (len(inp) <= 0):
                 continue
