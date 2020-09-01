@@ -9,6 +9,11 @@
       "elevated": 000,
       "realtime": 000,
       "unsure":0
+    },
+    "reactions": {
+      "acceptable": "✅",
+      "neutral": "🆗",
+      "warning": "❌"
     }
   },
   "keyBindings": {

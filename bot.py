@@ -96,7 +96,7 @@ def main():
                     raw = re.sub(r'[ ]+', ' ', raw.strip())
                     inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
                     user = comment.author.name
-                    link = comment.permalink
+                    link = link.replace(re.search(r'/r/[\w]+/comments/[\w\d]+/([\w\d_]+)/[\w\d]+/', comment.permalink).group(1), '_', 1)
 
                     if (len(inp) <= 0):
                         continue
@@ -142,8 +142,8 @@ def main():
         client.loop.create_task(read_comments())
 
     @client.command()
-    async def test(ctx):
-        print(ctx.message.content)
+    async def ping(ctx):
+        await ctx.message.channel.send("Pong!")
 
     @client.event
     async def on_reaction_add(reaction, user):
@@ -152,11 +152,11 @@ def main():
         if re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content) is None:
             return
 
-        if reaction.emoji == "✅":
+        if reaction.emoji == cfg['discord']['reactions']['acceptable']:
             cat = 0
-        elif reaction.emoji == "🆗":
+        elif reaction.emoji == cfg['discord']['reactions']['neutral']:
             cat = 1
-        elif reaction.emoji == "❌":
+        elif reaction.emoji == cfg['discord']['reactions']['warning']:
             cat = 2
         else:
             await reaction.message.channel.send(f'Unknown signifer. Remove reaction to reclassify.')
@@ -180,7 +180,7 @@ def main():
             json.dump(tmp, jsonFile2)
             jsonFile2.truncate()
 
-        await reaction.message.channel.send(f'Comment added to training data')
+        await reaction.message.channel.send(f'Comment added to training data:\n```{inp}```')
         print(f'{reaction.emoji}: {inp}')
 
     client.run(cfg['discord']['clientID'])
