@@ -29,7 +29,7 @@ def main():
             raw = " ".join(comment.body.lower().splitlines())
             raw = re.sub(CONST_REG, ' ', raw, flags=re.MULTILINE)
             raw = re.sub(r'([\'’])', '', raw)
-            raw = re.sub(r'[^a-z\s]', ' ', raw)
+            raw = re.sub(r'[^a-z ]', ' ', raw)
             raw = re.sub(r'[ ]+', ' ', raw.strip())
             inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
             user = comment.author.name

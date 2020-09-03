@@ -112,9 +112,9 @@ def main():
                                 classification = tg['classification']
 
                         if (classification == 'POSSIBLE WARNING'):
-                            await elevated_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```fix\n{comment.body}\n```\n<http://reddit.com{link}>')
+                            await elevated_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
                         else:
-                            await realtime_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```\n{comment.body}\n```\n<http://reddit.com{link}>')
+                            await realtime_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
 
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
@@ -122,7 +122,7 @@ def main():
                             print(f'    By: {user}\n    http://reddit.com{link}\n')
 
                     else:
-                        await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tg['classification']}]** By: {user}\n```\n{comment.body}\n```\n<http://reddit.com{link}>")
+                        await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tg['classification']}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
 
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
@@ -169,7 +169,7 @@ def main():
         raw = re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content.lower())
         raw = re.sub(CONST_REG, ' ', raw.group(1))
         raw = re.sub(r'([\'’])', '', raw)
-        raw = re.sub(r'[^a-z\s]', ' ', raw)
+        raw = re.sub(r'[^a-z ]', ' ', raw)
         raw = re.sub(r'[ ]+', ' ', raw.strip())
         inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
 
@@ -180,7 +180,7 @@ def main():
             json.dump(tmp, jsonFile2)
             jsonFile2.truncate()
 
-        await reaction.message.channel.send(f'Comment added to training data:\n```{inp}```')
+        await reaction.message.channel.send(f'Comment added to training data:\n```{inp[:25]}```')
         print(f'{reaction.emoji}: {inp}')
 
     client.run(cfg['discord']['clientID'])
