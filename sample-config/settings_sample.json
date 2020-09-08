@@ -29,6 +29,10 @@
   "praw": {
     "cred": "",
     "skipExisting": true,
-    "sub": ""
+    "sub": "",
+    "toolbox": {
+      "monitorUsers": false,
+      "usernotePage": "usernote"
+    }
   }
 }

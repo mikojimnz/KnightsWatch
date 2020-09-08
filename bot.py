@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import discord
 import json
 import nltk
@@ -14,6 +15,7 @@ import tensorflow
 import tflearn
 import time
 import traceback
+import zlib
 
 from discord.ext import commands
 from nltk.stem.lancaster import LancasterStemmer
@@ -76,10 +78,20 @@ def main():
         reddit = praw.Reddit(cfg['praw']['cred'])
         sub = reddit.subreddit(cfg['praw']['sub'])
         commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
+        watchlist = []
+
+        if (cfg['praw']['toolbox']['monitorUsers']):
+            usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
+            decompressed = zlib.decompress(base64.b64decode(usernotesJson['blob']))
+            for user in json.loads(decompressed).keys():
+                 watchlist.append(user)
+
+            print(f'{len(watchlist)} users in toolbox usernotes')
 
         elevated_ch = client.get_channel(cfg['discord']['channels']['elevated'])
         realtime_ch = client.get_channel(cfg['discord']['channels']['realtime'])
         unsure_ch = client.get_channel(cfg['discord']['channels']['unsure'])
+        userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
 
         cprint("\n    Comment Stream Ready\n", 'green')
 
@@ -116,6 +128,9 @@ def main():
                         else:
                             await realtime_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
 
+                        if (comment.author.name in watchlist):
+                            await userWatch_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
+
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
                             cprint(f'\n    [{confidence:0.3f}% {classification}]', color[classification])
@@ -123,6 +138,9 @@ def main():
 
                     else:
                         await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tg['classification']}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
+
+                        if (comment.author.name in watchlist):
+                            await userWatch_ch.send(f"**[UNSURE {confidence:0.3f}% {tg['classification']}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
 
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
