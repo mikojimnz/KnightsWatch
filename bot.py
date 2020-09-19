@@ -218,9 +218,8 @@ def main():
             try:
                 rule = int(args[1]) - 1
                 comment = reddit.comment(id)
-                reply = comment.reply(f'Removed. Reason:\n> {sub.rules[rule]}')
                 comment.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {args[1]}', reason_id=sub.mod.removal_reasons[rule].id)
-                reply.mod.distinguish(how='yes')
+                reply = comment.mod.send_removal_message(title='ignored', type='public', message=f'Removed. Reason:\n> {sub.rules[rule]}')
                 reply.mod.lock()
 
                 await ctx.send(f'Removed {id} for `{sub.rules[rule]}`')
@@ -267,9 +266,8 @@ def main():
 
                 try:
                     comment = reddit.comment(id)
-                    reply = comment.reply(f'Removed. Reason:\n> {sub.rules[rule]}')
                     comment.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {rule + 1}', reason_id=sub.mod.removal_reasons[rule].id)
-                    reply.mod.distinguish(how='yes')
+                    reply = comment.mod.send_removal_message(title='ignored', type='public', message=f'Removed. Reason:\n> {sub.rules[rule]}')
                     reply.mod.lock()
 
                     await reaction.message.channel.send(f'Removed {id} for `{sub.rules[rule]}`')
