@@ -184,6 +184,7 @@ def main():
 
         if not args:
             await ctx.send('No argument found')
+            return
         elif ((args[0] == 'watchlist') and (cfg['praw']['toolbox']['monitorUsers'])):
             watchlist = []
             usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
@@ -195,45 +196,115 @@ def main():
             await ctx.send(f'Watchlist reloaded with {len(watchlist)} users in toolbox usernotes')
         else:
             await ctx.send(f'Invalid argument {args}')
+            return
 
+    @client.command()
+    async def remove(ctx, *args):
+        global reddit
+        global sub
+
+        if not args or (len(locals()) != 2):
+            await ctx.send('Invlaid arguments found. !remove [Comment URL | Comment ID ] (Rule Number)')
+            return
+
+        pattern = re.search(r'http[s]?:\/\/reddit.com\/r\/[\w]+\/comments\/[\w\d]+\/-\/([\w\d]+)/|(^[\w\d]+$)', args[0])
+
+        if pattern:
+            if pattern.group(1) == None:
+                id = pattern.group(2)
+            else:
+                id = pattern.group(1)
+
+            try:
+                rule = int(args[1]) - 1
+                comment = reddit.comment(id)
+                reply = comment.reply(f'Removed. Reason:\n> {sub.rules[rule]}')
+                comment.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {args[1]}', reason_id=sub.mod.removal_reasons[rule].id)
+                reply.mod.distinguish(how='yes')
+                reply.mod.lock()
+
+                await ctx.send(f'Removed {id} for `{sub.rules[rule]}`')
+            except Exception as e:
+                await ctx.send(f'Error: `{e}`')
+
+        else:
+            await ctx.send(f'Unknown args1 {args[0]}')
+            return
 
     @client.event
     async def on_reaction_add(reaction, user):
-        src = reaction.message.channel.id
-
-        if re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content) is None:
-            return
-
-        if reaction.emoji == cfg['discord']['reactions']['acceptable']:
-            cat = 0
-        elif reaction.emoji == cfg['discord']['reactions']['neutral']:
-            cat = 1
-        elif reaction.emoji == cfg['discord']['reactions']['warning']:
-            cat = 2
-        else:
-            await reaction.message.channel.send(f'Unknown signifer. Remove reaction to reclassify.')
-            return
 
         if len(reaction.message.reactions) > 1:
-            await reaction.message.channel.send(f'Comment has already been reclassaified.')
+            await reaction.message.channel.send(f'Comment has already been moderated.')
             return
 
-        raw = re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content.lower())
-        raw = re.sub(CONST_REG, ' ', raw.group(1))
-        raw = re.sub(r'([\'’])', '', raw)
-        raw = re.sub(r'[^a-z ]', ' ', raw)
-        raw = re.sub(r'[ ]+', ' ', raw.strip())
-        inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
+        async def addData(cat):
+            if re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content) is None:
+                return
 
-        with open("training/intents.json", "r+") as jsonFile2:
-            tmp = json.load(jsonFile2)
-            tmp['intents'][cat]['patterns'].append(inp)
-            jsonFile2.seek(0)
-            json.dump(tmp, jsonFile2)
-            jsonFile2.truncate()
+            raw = re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content.lower())
+            raw = re.sub(CONST_REG, ' ', raw.group(1))
+            raw = re.sub(r'([\'’])', '', raw)
+            raw = re.sub(r'[^a-z ]', ' ', raw)
+            raw = re.sub(r'[ ]+', ' ', raw.strip())
+            inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
 
-        await reaction.message.channel.send(f'Comment added to training data: `{inp[:25]}`')
-        print(f'{reaction.emoji}: {inp}')
+            with open("training/intents.json", "r+") as jsonFile2:
+                tmp = json.load(jsonFile2)
+                tmp['intents'][cat]['patterns'].append(inp)
+                jsonFile2.seek(0)
+                json.dump(tmp, jsonFile2)
+                jsonFile2.truncate()
+
+            await reaction.message.channel.send(f'Comment added to training data: `{inp[:25]}`')
+            print(f'{reaction.emoji}: {inp}')
+
+        async def reactionRemove(rule):
+            pattern = re.search(r'http[s]?:\/\/reddit.com\/r\/[\w]+\/comments\/[\w\d]+\/-\/([\w\d]+)/', reaction.message.content)
+
+            if pattern:
+                id = pattern.group(1)
+
+                try:
+                    comment = reddit.comment(id)
+                    reply = comment.reply(f'Removed. Reason:\n> {sub.rules[rule]}')
+                    comment.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {rule + 1}', reason_id=sub.mod.removal_reasons[rule].id)
+                    reply.mod.distinguish(how='yes')
+                    reply.mod.lock()
+
+                    await reaction.message.channel.send(f'Removed {id} for `{sub.rules[rule]}`')
+                except Exception as e:
+                    await reaction.message.channel.send(f'Error: `{e}`')
+
+        if reaction.emoji == cfg['discord']['reactions']['acceptable']:
+            await addData(0)
+        elif reaction.emoji == cfg['discord']['reactions']['neutral']:
+            await addData(1)
+        elif reaction.emoji == cfg['discord']['reactions']['warning']:
+            await addData(2)
+        elif reaction.emoji == "1️⃣":
+            await reactionRemove(0)
+        elif reaction.emoji == "2️⃣":
+            await reactionRemove(1)
+        elif reaction.emoji == "3️⃣":
+            await reactionRemove(2)
+        elif reaction.emoji == "4️⃣":
+            await reactionRemove(3)
+        elif reaction.emoji == "5️⃣":
+            await reactionRemove(4)
+        elif reaction.emoji == "6️⃣":
+            await reactionRemove(5)
+        elif reaction.emoji == "7️⃣":
+            await reactionRemove(6)
+        elif reaction.emoji == "8️⃣":
+            await reactionRemove(7)
+        elif reaction.emoji == "9️⃣":
+            await reactionRemove(8)
+        elif reaction.emoji == "0️⃣":
+            await reactionRemove(9)
+        else:
+            await reaction.message.channel.send(f'Unknown reaction. Remove reaction to moderate.')
+            return
 
     client.run(cfg['discord']['clientID'])
 
