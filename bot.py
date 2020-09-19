@@ -27,6 +27,7 @@ CONST_REG = r'(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|or
 sub = None
 reddit = None
 watchlist = []
+exceptCnt = 0
 
 def main():
     with open("settings.json") as jsonFile1:
@@ -80,6 +81,7 @@ def main():
         global reddit
         global sub
         global watchlist
+        global exceptCnt
         await client.wait_until_ready()
 
         commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
@@ -98,6 +100,7 @@ def main():
         userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
 
         cprint("\n    Comment Stream Ready\n", 'green')
+        await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
 
         while not client.is_closed():
             try:
@@ -154,7 +157,11 @@ def main():
             except KeyboardInterrupt:
                 sys.exit(1)
             except Exception as e:
-                print(f'EXCEPTION:\n{e}')
+                await client.change_presence(status=discord.Status.idle, activity=discord.Game(name='an exception. Check logs.'))
+                traceback.print_exc()
+                exceptCnt += 1
+                print(f'Exception #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
+                sleep(60 * exceptCnt)
 
             await asyncio.sleep(1)
 
