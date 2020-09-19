@@ -122,32 +122,29 @@ def main():
 
                     results = model.predict([bag_of_words(inp, words)])[0]
                     results_index = numpy.argmax(results)
-                    tag = labels[results_index]
+                    tag = labels[results_index].upper()
                     confidence = results[results_index] * 100
 
                     if (results[results_index] > cfg['model']['confidence']):
-                        for tg in data["intents"]:
-                            if tg['tag'] == tag:
-                                classification = tg['classification']
 
-                        if (classification == 'POSSIBLE WARNING'):
-                            await elevated_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
+                        if (tag == 'WARNING'):
+                            await elevated_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
                         else:
-                            await realtime_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
+                            await realtime_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
 
                         if (comment.author.name in watchlist):
-                            await userWatch_ch.send(f'**[{confidence:0.3f}% {classification}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
+                            await userWatch_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
 
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
-                            cprint(f'\n    [{confidence:0.3f}% {classification}]', color[classification])
+                            cprint(f'\n    [{confidence:0.3f}% {tag}]', color[classification])
                             print(f'    By: {user}\n    http://reddit.com{link}\n')
 
                     else:
-                        await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tg['classification']}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
+                        await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
 
                         if (comment.author.name in watchlist):
-                            await userWatch_ch.send(f"**[UNSURE {confidence:0.3f}% {tg['classification']}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
+                            await userWatch_ch.send(f"**[UNSURE {confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
 
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
