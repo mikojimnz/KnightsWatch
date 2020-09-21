@@ -30,6 +30,7 @@
     "cred": "",
     "skipExisting": true,
     "sub": "",
+    "wikiConfig": "knights-watch",
     "toolbox": {
       "monitorUsers": false,
       "usernotePage": "usernote"

@@ -27,6 +27,7 @@ CONST_REG = r'(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|or
 sub = None
 reddit = None
 watchlist = []
+ignored = []
 exceptCnt = 0
 
 def main():
@@ -81,10 +82,15 @@ def main():
         global reddit
         global sub
         global watchlist
+        global ignored
         global exceptCnt
-        await client.wait_until_ready()
 
+        await client.wait_until_ready()
         commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
+        elevated_ch = client.get_channel(cfg['discord']['channels']['elevated'])
+        realtime_ch = client.get_channel(cfg['discord']['channels']['realtime'])
+        unsure_ch = client.get_channel(cfg['discord']['channels']['unsure'])
+        userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
 
         if (cfg['praw']['toolbox']['monitorUsers']):
             usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
@@ -92,12 +98,11 @@ def main():
             for user in json.loads(decompressed).keys():
                  watchlist.append(user)
 
-            print(f'{len(watchlist)} users in toolbox usernotes')
+            print(f'    {len(watchlist)} users in toolbox usernotes')
 
-        elevated_ch = client.get_channel(cfg['discord']['channels']['elevated'])
-        realtime_ch = client.get_channel(cfg['discord']['channels']['realtime'])
-        unsure_ch = client.get_channel(cfg['discord']['channels']['unsure'])
-        userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
+        wikiConfig = json.loads(sub.wiki[cfg['praw']['wikiConfig']].content_md)
+        ignored = wikiConfig['ignored']
+        print(f'    {len(ignored)} users being ignored.')
 
         cprint("\n    Comment Stream Ready\n", 'green')
         await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
@@ -117,7 +122,7 @@ def main():
                     user = comment.author.name
                     link = comment.permalink.replace(re.search(r'/r/[\w]+/comments/[\w\d]+/([\w\d_]+)/[\w\d]+/', comment.permalink).group(1), '-', 1)
 
-                    if (len(inp) <= 0):
+                    if (len(inp) <= 0) or (user in ignored):
                         continue
 
                     results = model.predict([bag_of_words(inp, words)])[0]
@@ -132,7 +137,7 @@ def main():
                         else:
                             await realtime_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
 
-                        if (comment.author.name in watchlist):
+                        if (user in watchlist):
                             await userWatch_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
 
                         if (cfg['debug']['outputResults']):
@@ -143,7 +148,7 @@ def main():
                     else:
                         await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
 
-                        if (comment.author.name in watchlist):
+                        if (user in watchlist):
                             await userWatch_ch.send(f"**[UNSURE {confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
 
                         if (cfg['debug']['outputResults']):
@@ -173,6 +178,13 @@ def main():
         client.loop.create_task(read_comments())
 
     @client.command()
+    async def clearexcpt(ctx):
+        global exceptCnt
+        exceptCnt = 0
+        await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
+        await ctx.message.channel.send("Clearing Exception")
+
+    @client.command()
     async def ping(ctx):
         await ctx.message.channel.send("Pong!")
 
@@ -181,12 +193,12 @@ def main():
         global reddit
         global sub
         global watchlist
+        global ignored
 
         if not args:
             await ctx.send('No argument found')
             return
         elif ((args[0] == 'watchlist') and (cfg['praw']['toolbox']['monitorUsers'])):
-            watchlist = []
             usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
             decompressed = zlib.decompress(base64.b64decode(usernotesJson['blob']))
             for user in json.loads(decompressed).keys():
@@ -194,6 +206,12 @@ def main():
 
             print(f'{len(watchlist)} users in toolbox usernotes')
             await ctx.send(f'Watchlist reloaded with {len(watchlist)} users in toolbox usernotes')
+        elif (args[0] == 'ignored'):
+            wikiConfig = json.loads(sub.wiki[cfg['praw']['wikiConfig']].content_md)
+            ignored = wikiConfig['ignored']
+
+            print(f'    {len(ignored)} users being ignored.')
+            await ctx.send(f'Ignored reloaded with {len(ignored)} users in config')
         else:
             await ctx.send(f'Invalid argument {args}')
             return
