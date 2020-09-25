@@ -173,7 +173,7 @@ def main():
                         embed = discord.Embed(
                             title = comment.body,
                             description = f'{confidence:0.3f}% {tag}',
-                            color = discord.Colour.yellow(),
+                            color = discord.Colour.dark_gold(),
                             url = f'http://reddit.com{link}'
                         )
 
