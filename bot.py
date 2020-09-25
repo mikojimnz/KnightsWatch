@@ -239,12 +239,13 @@ def main():
             await ctx.send('No argument found')
             return
         elif ((args[0] == 'watchlist') and (cfg['praw']['toolbox']['monitorUsers'])):
+            watchlist.clear()
             usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
             decompressed = zlib.decompress(base64.b64decode(usernotesJson['blob']))
             for user in json.loads(decompressed).keys():
                  watchlist.append(user)
 
-            print(f'{len(watchlist)} users in toolbox usernotes')
+            print(f'    {len(watchlist)} users in toolbox usernotes')
             await ctx.send(f'Watchlist reloaded with {len(watchlist)} users in toolbox usernotes')
         elif (args[0] == 'ignored'):
             wikiConfig = json.loads(sub.wiki[cfg['praw']['wikiConfig']].content_md)
