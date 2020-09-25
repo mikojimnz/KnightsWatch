@@ -141,6 +141,7 @@ def main():
                             )
 
                             embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
                             await elevated_ch.send(embed=embed)
                         else:
                             embed = discord.Embed(
@@ -151,6 +152,7 @@ def main():
                             )
 
                             embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
                             await realtime_ch.send(embed=embed)
 
                         if (user in watchlist):
@@ -162,6 +164,7 @@ def main():
                             )
 
                             embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
                             await userWatch_ch.send(embed=embed)
 
                         if (cfg['debug']['outputResults']):
@@ -178,6 +181,7 @@ def main():
                         )
 
                         embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                        embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
                         await unsure_ch.send(embed=embed)
 
                         if (user in watchlist):
@@ -189,6 +193,7 @@ def main():
                             )
 
                             embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
                             await userWatch_ch.send(embed=embed)
 
                         if (cfg['debug']['outputResults']):
