@@ -133,12 +133,36 @@ def main():
                     if (results[results_index] > cfg['model']['confidence']):
 
                         if (tag == 'WARNING'):
-                            await elevated_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
+                            embed = discord.Embed(
+                                title = comment.body,
+                                description = f'{confidence:0.3f}% {tag}',
+                                color = discord.Colour.red(),
+                                url = f'http://reddit.com{link}'
+                            )
+
+                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            await elevated_ch.send(embed=embed)
                         else:
-                            await realtime_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
+                            embed = discord.Embed(
+                                title = comment.body,
+                                description = f'{confidence:0.3f}% {tag}',
+                                color = discord.Colour.green(),
+                                url = f'http://reddit.com{link}'
+                            )
+
+                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            await realtime_ch.send(embed=embed)
 
                         if (user in watchlist):
-                            await userWatch_ch.send(f'**[{confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>')
+                            embed = discord.Embed(
+                                title = comment.body,
+                                description = f'{confidence:0.3f}% {tag}',
+                                color = discord.Colour.orange(),
+                                url = f'http://reddit.com{link}'
+                            )
+
+                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            await userWatch_ch.send(embed=embed)
 
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
@@ -146,10 +170,26 @@ def main():
                             print(f'    By: {user}\n    http://reddit.com{link}\n')
 
                     else:
-                        await unsure_ch.send(f"**[UNSURE {confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
+                        embed = discord.Embed(
+                            title = comment.body,
+                            description = f'{confidence:0.3f}% {tag}',
+                            color = discord.Colour.yellow(),
+                            url = f'http://reddit.com{link}'
+                        )
+
+                        embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                        await unsure_ch.send(embed=embed)
 
                         if (user in watchlist):
-                            await userWatch_ch.send(f"**[UNSURE {confidence:0.3f}% {tag}]** By: {user}\n```{comment.body}```\n<http://reddit.com{link}>")
+                            embed = discord.Embed(
+                                title = comment.body,
+                                description = f'{confidence:0.3f}% {tag}',
+                                color = discord.Colour.orange(),
+                                url = f'http://reddit.com{link}'
+                            )
+
+                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                            await userWatch_ch.send(embed=embed)
 
                         if (cfg['debug']['outputResults']):
                             print(f'\n{inp}')
@@ -256,11 +296,10 @@ def main():
             return
 
         async def addData(cat):
-            if re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content) is None:
+            if reaction.message.embeds is None:
                 return
 
-            raw = re.search(r'```([\w\d\s\W\D]+)```', reaction.message.content.lower())
-            raw = re.sub(CONST_REG, ' ', raw.group(1))
+            raw = re.sub(CONST_REG, ' ', reaction.message.embeds[0].title)
             raw = re.sub(r'([\'’])', '', raw)
             raw = re.sub(r'[^a-z ]', ' ', raw)
             raw = re.sub(r'[ ]+', ' ', raw.strip())
@@ -277,7 +316,7 @@ def main():
             print(f'{reaction.emoji}: {inp}')
 
         async def reactionRemove(rule):
-            pattern = re.search(r'http[s]?:\/\/reddit.com\/r\/[\w]+\/comments\/[\w\d]+\/-\/([\w\d]+)/', reaction.message.content)
+            pattern = re.search(r'http[s]?:\/\/reddit.com\/r\/[\w]+\/comments\/[\w\d]+\/-\/([\w\d]+)/', reaction.message.embeds[0].url)
 
             if pattern:
                 id = pattern.group(1)

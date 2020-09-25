@@ -134,3 +134,4 @@ model/*
 logs/*
 training/intents.json
 settings.json
+test.py
