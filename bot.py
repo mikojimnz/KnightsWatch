@@ -286,7 +286,7 @@ def main():
             if reaction.message.embeds is None:
                 return
 
-            raw = re.sub(CONST_REG, ' ', reaction.message.embeds[0].description)
+            raw = re.sub(CONST_REG, ' ', reaction.message.embeds[0].description.lower())
             raw = re.sub(r'([\'’])', '', raw)
             raw = re.sub(r'[^a-z ]', ' ', raw)
             raw = re.sub(r'[ ]+', ' ', raw.strip())
