@@ -132,39 +132,28 @@ def main():
 
                     if (results[results_index] > cfg['model']['confidence']):
 
-                        if (tag == 'WARNING'):
-                            embed = discord.Embed(
-                                title = comment.body,
-                                description = f'{confidence:0.3f}% {tag}',
-                                color = discord.Colour.red(),
-                                url = f'http://reddit.com{link}'
-                            )
-
-                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
-                            await elevated_ch.send(embed=embed)
+                        if tag == 'WARNING':
+                            color = discord.Colour.red()
+                        elif tag == 'NEUTRAL':
+                            color = discord.Colour.lighter_gray()
                         else:
-                            embed = discord.Embed(
-                                title = comment.body,
-                                description = f'{confidence:0.3f}% {tag}',
-                                color = discord.Colour.green(),
-                                url = f'http://reddit.com{link}'
-                            )
+                            color = discord.Colour.green()
 
-                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
-                            await realtime_ch.send(embed=embed)
+                        embed = discord.Embed(
+                            title = comment.submission.title[:255],
+                            description = f'{comment.body[:2048]}',
+                            color = color,
+                            url = f'http://reddit.com{link}'
+                        )
 
-                        if (user in watchlist):
-                            embed = discord.Embed(
-                                title = comment.body,
-                                description = f'{confidence:0.3f}% {tag}',
-                                color = discord.Colour.orange(),
-                                url = f'http://reddit.com{link}'
-                            )
+                        embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
+                        embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
+                        await realtime_ch.send(embed=embed)
 
-                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
+                        if tag == 'WARNING':
+                            await elevated_ch.send(embed=embed)
+
+                        if user in watchlist:
                             await userWatch_ch.send(embed=embed)
 
                         if (cfg['debug']['outputResults']):
@@ -174,26 +163,18 @@ def main():
 
                     else:
                         embed = discord.Embed(
-                            title = comment.body,
-                            description = f'{confidence:0.3f}% {tag}',
-                            color = discord.Colour.dark_gold(),
+                            title = comment.submission.title[:255],
+                            description = f'{comment.body[:2048]}',
+                            color = discord.Colour.purple(),
                             url = f'http://reddit.com{link}'
                         )
 
                         embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                        embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
+                        embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
                         await unsure_ch.send(embed=embed)
+                        await realtime_ch.send(embed=embed)
 
                         if (user in watchlist):
-                            embed = discord.Embed(
-                                title = comment.body,
-                                description = f'{confidence:0.3f}% {tag}',
-                                color = discord.Colour.orange(),
-                                url = f'http://reddit.com{link}'
-                            )
-
-                            embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                            embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}")
                             await userWatch_ch.send(embed=embed)
 
                         if (cfg['debug']['outputResults']):
