@@ -8,7 +8,8 @@
     "channels": {
       "elevated": 000,
       "realtime": 000,
-      "unsure":0
+      "unsure": 000,
+      "userWatch": 000
     },
     "reactions": {
       "acceptable": "✅",
