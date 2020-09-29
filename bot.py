@@ -88,10 +88,12 @@ def main():
 
         await client.wait_until_ready()
         commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
+        submissionStream = sub.stream.submissions(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
         elevated_ch = client.get_channel(cfg['discord']['channels']['elevated'])
         realtime_ch = client.get_channel(cfg['discord']['channels']['realtime'])
         unsure_ch = client.get_channel(cfg['discord']['channels']['unsure'])
         userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
+        submission_ch = client.get_channel(cfg['discord']['channels']['submissions'])
 
         if (cfg['praw']['toolbox']['monitorUsers']):
             usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
@@ -168,6 +170,29 @@ def main():
                         print(f'\n{inp}')
                         cprint(f'\n    [{confidence:0.3f}% {tag}]', color[classification])
                         print(f'    By: {user}\n    http://reddit.com{link}\n')
+
+                for submission in submissionStream:
+                    if submission is None:
+                        break
+
+                    user = f'({submission.author.name})' if (submission.author.name in watchlist) else submission.author.name
+
+                    embed = discord.Embed(
+                        title = submission.title[:255],
+                        description = submission.link_flair_text,
+                        url = f'http://reddit.com{submission.permalink}'
+                    )
+
+                    try:
+                        embed.set_author(name=f'{user}', icon_url=submission.author.icon_img)
+                    except NotFound:
+                        embed.set_author(name=f'*{user}*')
+
+                    embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}")
+                    await submission_ch.send(embed=embed)
+
+                    if user in watchlist:
+                        await userWatch_ch.send(embed=embed)
 
             except KeyboardInterrupt:
                 sys.exit(1)

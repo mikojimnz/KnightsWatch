@@ -8,6 +8,7 @@
     "channels": {
       "elevated": 000,
       "realtime": 000,
+      "submissions": 000,
       "unsure": 000,
       "userWatch": 000
     },
