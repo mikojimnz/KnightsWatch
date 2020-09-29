@@ -7,6 +7,7 @@ import numpy
 import os
 import pickle
 import praw
+import prawcore
 import random
 import re
 import signal
@@ -73,7 +74,7 @@ def main():
     color = {
     "ACCEPTABLE": "green",
     "NEUTRAL": "white",
-    "POSSIBLE WARNING": "red"
+    "WARNING": "red"
     }
 
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -119,7 +120,7 @@ def main():
                     raw = re.sub(r'[^a-z\s]', ' ', raw)
                     raw = re.sub(r'[ ]+', ' ', raw.strip())
                     inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
-                    user = comment.author.name
+                    user = f'({comment.author.name})' if (comment.author.name in watchlist) else comment.author.name
                     link = comment.permalink.replace(re.search(r'/r/[\w]+/comments/[\w\d]+/([\w\d_]+)/[\w\d]+/', comment.permalink).group(1), '-', 1)
 
                     if (len(inp) <= 0) or (user in ignored):
@@ -130,60 +131,48 @@ def main():
                     tag = labels[results_index].upper()
                     confidence = results[results_index] * 100
 
-                    if (results[results_index] > cfg['model']['confidence']):
-
-                        if tag == 'WARNING':
-                            color = discord.Colour.red()
-                        elif tag == 'NEUTRAL':
-                            color = discord.Colour.lighter_gray()
-                        else:
-                            color = discord.Colour.green()
-
-                        embed = discord.Embed(
-                            title = comment.submission.title[:255],
-                            description = f'{comment.body[:2048]}',
-                            color = color,
-                            url = f'http://reddit.com{link}'
-                        )
-
-                        embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                        embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
-                        await realtime_ch.send(embed=embed)
-
-                        if tag == 'WARNING':
-                            await elevated_ch.send(embed=embed)
-
-                        if user in watchlist:
-                            await userWatch_ch.send(embed=embed)
-
-                        if (cfg['debug']['outputResults']):
-                            print(f'\n{inp}')
-                            cprint(f'\n    [{confidence:0.3f}% {tag}]', color[classification])
-                            print(f'    By: {user}\n    http://reddit.com{link}\n')
-
+                    if (results[results_index] < cfg['model']['confidence']):
+                        color = discord.Colour.purple()
+                    elif tag == 'WARNING':
+                        color = discord.Colour.red()
+                    elif tag == 'NEUTRAL':
+                        color = discord.Colour.lighter_gray()
                     else:
-                        embed = discord.Embed(
-                            title = comment.submission.title[:255],
-                            description = f'{comment.body[:2048]}',
-                            color = discord.Colour.purple(),
-                            url = f'http://reddit.com{link}'
-                        )
+                        color = discord.Colour.green()
 
+                    embed = discord.Embed(
+                        title = comment.submission.title[:255],
+                        description = f'{comment.body[:2048]}',
+                        color = color,
+                        url = f'http://reddit.com{link}'
+                    )
+
+                    try:
                         embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                        embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
+                    except NotFound:
+                        embed.set_author(name=f'*{user}*')
+
+                    embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
+                    await realtime_ch.send(embed=embed)
+
+                    if tag == 'WARNING':
+                        await elevated_ch.send(embed=embed)
+
+                    if user in watchlist:
+                        await userWatch_ch.send(embed=embed)
+
+                    if (results[results_index] < cfg['model']['confidence']):
                         await unsure_ch.send(embed=embed)
-                        await realtime_ch.send(embed=embed)
 
-                        if (user in watchlist):
-                            await userWatch_ch.send(embed=embed)
-
-                        if (cfg['debug']['outputResults']):
-                            print(f'\n{inp}')
-                            cprint(f'\n    [UNSURE {confidence:0.3f}% {tag}]', 'cyan')
-                            print(f'    By: {user}\n    http://reddit.com{link}\n')
+                    if (cfg['debug']['outputResults']):
+                        print(f'\n{inp}')
+                        cprint(f'\n    [{confidence:0.3f}% {tag}]', color[classification])
+                        print(f'    By: {user}\n    http://reddit.com{link}\n')
 
             except KeyboardInterrupt:
                 sys.exit(1)
+            except prawcore.exceptions.NotFound:
+                pass
             except Exception as e:
                 await client.change_presence(status=discord.Status.idle, activity=discord.Game(name='an exception. Check logs.'))
                 traceback.print_exc()
