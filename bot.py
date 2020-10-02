@@ -190,7 +190,7 @@ def main():
                     embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}")
                     await submission_ch.send(embed=embed)
 
-                    if comment.author.name in watchlist:
+                    if submission.author.name in watchlist:
                         await userWatch_ch.send(embed=embed)
 
             except KeyboardInterrupt:
