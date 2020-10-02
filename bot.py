@@ -160,7 +160,7 @@ def main():
                     if tag == 'WARNING':
                         await elevated_ch.send(embed=embed)
 
-                    if user in watchlist:
+                    if comment.author.name in watchlist:
                         await userWatch_ch.send(embed=embed)
 
                     if (results[results_index] < cfg['model']['confidence']):
@@ -175,13 +175,12 @@ def main():
                     if submission is None:
                         break
 
-                    user = f'({submission.author.name})' if (submission.author.name in watchlist) else submission.author.name
-
                     embed = discord.Embed(
                         title = submission.title[:255],
                         description = submission.link_flair_text,
                         url = f'http://reddit.com{submission.permalink}'
                     )
+                    user = f'({submission.author.name})' if (submission.author.name in watchlist) else submission.author.name
 
                     try:
                         embed.set_author(name=f'{user}', icon_url=submission.author.icon_img)
@@ -191,7 +190,7 @@ def main():
                     embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}")
                     await submission_ch.send(embed=embed)
 
-                    if user in watchlist:
+                    if comment.author.name in watchlist:
                         await userWatch_ch.send(embed=embed)
 
             except KeyboardInterrupt:
