@@ -123,7 +123,7 @@ def main():
                     raw = re.sub(r'[ ]+', ' ', raw.strip())
                     inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
                     user = f'({comment.author.name})' if (comment.author.name in watchlist) else comment.author.name
-                    link = comment.permalink.replace(re.search(r'/r/[\w]+/comments/[\w\d]+/([\w\d_]+)/[\w\d]+/', comment.permalink).group(1), '-', 1)
+                    link = f'http://reddit.com{comment.permalink}'
 
                     if (len(inp) <= 0) or (user in ignored):
                         continue
@@ -146,7 +146,7 @@ def main():
                         title = comment.submission.title[:255],
                         description = f'{comment.body[:2048]}',
                         color = color,
-                        url = f'http://reddit.com{link}'
+                        url = link
                     )
 
                     try:
@@ -169,7 +169,7 @@ def main():
                     if (cfg['debug']['outputResults']):
                         print(f'\n{inp}')
                         cprint(f'\n    [{confidence:0.3f}% {tag}]', color[classification])
-                        print(f'    By: {user}\n    http://reddit.com{link}\n')
+                        print(f'    By: {user}\n    {link}\n')
 
                 for submission in submissionStream:
                     if submission is None:
