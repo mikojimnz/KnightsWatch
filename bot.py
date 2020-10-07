@@ -144,7 +144,7 @@ def main():
 
                     embed = discord.Embed(
                         title = comment.submission.title[:255],
-                        description = f'{comment.body[:2048]}',
+                        description = comment.id,
                         color = color,
                         url = link
                     )
@@ -155,6 +155,7 @@ def main():
                         embed.set_author(name=f'*{user}*')
 
                     embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
+                    embed.insert_field_at(index=0, name='Comment', value=comment.body[:2048])
                     await realtime_ch.send(embed=embed)
 
                     if tag == 'WARNING':
@@ -177,8 +178,9 @@ def main():
 
                     embed = discord.Embed(
                         title = submission.title[:255],
-                        description = submission.link_flair_text,
-                        url = f'http://reddit.com{submission.permalink}'
+                        description = submission.id,
+                        url = f'http://reddit.com{submission.permalink}',
+                        color = discord.Colour.greyple()
                     )
                     user = f'({submission.author.name})' if (submission.author.name in watchlist) else submission.author.name
 
@@ -188,6 +190,7 @@ def main():
                         embed.set_author(name=f'*{user}*')
 
                     embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}")
+                    embed.insert_field_at(index=0, name='Flair', value=submission.link_flair_text, inline=True)
                     await submission_ch.send(embed=embed)
 
                     if submission.author.name in watchlist:
@@ -295,10 +298,11 @@ def main():
             await reaction.message.channel.send(f'Comment has already been moderated.')
             return
 
-        async def addData(cat):
-            if reaction.message.embeds is None:
-                return
+        if reaction.message.embeds is None:
+            await reaction.message.channel.send(f'Message does not contain data.')
+            return
 
+        async def addData(cat):
             raw = re.sub(CONST_REG, ' ', reaction.message.embeds[0].description.lower())
             raw = re.sub(r'([\'’])', '', raw)
             raw = re.sub(r'[^a-z ]', ' ', raw)
@@ -316,15 +320,12 @@ def main():
             print(f'{reaction.emoji}: {inp}')
 
         async def reactionRemove(rule):
-            pattern = re.search(r'http[s]?:\/\/reddit.com\/r\/[\w]+\/comments\/[\w\d]+\/-\/([\w\d]+)/', reaction.message.embeds[0].url)
-
-            if pattern:
-                id = pattern.group(1)
+                id = reaction.message.embeds[0].description
 
                 try:
-                    comment = reddit.comment(id)
-                    comment.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {rule + 1}')
-                    reply = comment.mod.send_removal_message(title='ignored', type='public', message=f'Removed. Reason:\n> {sub.rules[rule]}')
+                    item = reddit.submission(id) if (reaction.message.embeds[0].color == discord.Colour.greyple()) else reddit.comment(id)
+                    item.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {rule + 1}')
+                    reply = item.mod.send_removal_message(title='ignored', type='public', message=f'Removed. Reason:\n> {sub.rules[rule]}')
                     reply.mod.lock()
 
                     await reaction.message.channel.send(f'Removed {id} for `{sub.rules[rule]}`')
