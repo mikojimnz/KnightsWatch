@@ -303,7 +303,7 @@ def main():
             return
 
         async def addData(cat):
-            raw = re.sub(CONST_REG, ' ', reaction.message.embeds[0].description.lower())
+            raw = re.sub(CONST_REG, ' ', reaction.message.embeds[0].fields[0].value.lower())
             raw = re.sub(r'([\'’])', '', raw)
             raw = re.sub(r'[^a-z ]', ' ', raw)
             raw = re.sub(r'[ ]+', ' ', raw.strip())
