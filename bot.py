@@ -18,12 +18,10 @@ import time
 import traceback
 import zlib
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 from nltk.stem.lancaster import LancasterStemmer
 from termcolor import colored, cprint
 from time import sleep
-
-CONST_REG = r'(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))'
 
 sub = None
 reddit = None
@@ -40,6 +38,14 @@ def main():
 
     with open("model/data.pickle", "rb") as p:
         words, labels, training, output = pickle.load(p)
+
+    def sanatize_text(input):
+        raw = " ".join(input.lower().splitlines())
+        raw = re.sub(r'(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))', ' ', raw, flags=re.MULTILINE)
+        raw = re.sub(r'([\'’])', '', raw)
+        raw = re.sub(r'[^a-z\s]', ' ', raw)
+        raw = re.sub(r'[ ]+', ' ', raw.strip())
+        return re.sub(r'( x b )|( nbsp )', ' ', raw)
 
     def bag_of_words(s, words):
         bag = [0 for _ in range(len(words))]
@@ -79,6 +85,7 @@ def main():
 
     os.system('cls' if os.name == 'nt' else 'clear')
 
+    @tasks.loop(seconds=0)
     async def read_comments():
         global reddit
         global sub
@@ -95,18 +102,7 @@ def main():
         userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
         submission_ch = client.get_channel(cfg['discord']['channels']['submissions'])
 
-        if (cfg['praw']['toolbox']['monitorUsers']):
-            usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
-            decompressed = zlib.decompress(base64.b64decode(usernotesJson['blob']))
-            for user in json.loads(decompressed).keys():
-                 watchlist.append(user)
-
-            print(f'    {len(watchlist)} users in toolbox usernotes')
-
-        wikiConfig = json.loads(sub.wiki[cfg['praw']['wikiConfig']].content_md)
-        ignored = wikiConfig['ignored']
-        print(f'    {len(ignored)} users being ignored.')
-
+        print(f'    {len(watchlist)} users in toolbox usernotes\n    {len(ignored)} users being ignored.')
         cprint("\n    Comment Stream Ready\n", 'green')
         await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
 
@@ -116,14 +112,9 @@ def main():
                     if comment is None:
                         break
 
-                    raw = " ".join(comment.body.lower().splitlines())
-                    raw = re.sub(CONST_REG, ' ', raw, flags=re.MULTILINE)
-                    raw = re.sub(r'([\'’])', '', raw)
-                    raw = re.sub(r'[^a-z\s]', ' ', raw)
-                    raw = re.sub(r'[ ]+', ' ', raw.strip())
-                    inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
                     user = f'({comment.author.name})' if (comment.author.name in watchlist) else comment.author.name
                     link = f'http://reddit.com{comment.permalink}'
+                    inp = sanatize_text(comment.body)
 
                     if (len(inp) <= 0) or (user in ignored):
                         continue
@@ -209,6 +200,22 @@ def main():
 
             await asyncio.sleep(1)
 
+    @read_comments.before_loop
+    async def load_lists():
+        global reddit
+        global sub
+        global watchlist
+        global ignored
+
+        if (cfg['praw']['toolbox']['monitorUsers']):
+            usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
+            decompressed = zlib.decompress(base64.b64decode(usernotesJson['blob']))
+            for user in json.loads(decompressed).keys():
+                 watchlist.append(user)
+
+        wikiConfig = json.loads(sub.wiki[cfg['praw']['wikiConfig']].content_md)
+        ignored = wikiConfig['ignored']
+
     @client.event
     async def on_ready():
         global reddit
@@ -217,12 +224,13 @@ def main():
         sub = reddit.subreddit(cfg['praw']['sub'])
 
         cprint(f'    Discord connection established, logged in as {client.user}', 'green')
-        client.loop.create_task(read_comments())
+        read_comments.start()
 
     @client.command()
     async def clearexcpt(ctx):
         global exceptCnt
         exceptCnt = 0
+        read_comments.restart()
         await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
         await ctx.message.channel.send("Clearing Exception")
 
@@ -303,11 +311,7 @@ def main():
             return
 
         async def addData(cat):
-            raw = re.sub(CONST_REG, ' ', reaction.message.embeds[0].fields[0].value.lower())
-            raw = re.sub(r'([\'’])', '', raw)
-            raw = re.sub(r'[^a-z ]', ' ', raw)
-            raw = re.sub(r'[ ]+', ' ', raw.strip())
-            inp = re.sub(r'( x b )|( nbsp )', ' ', raw)
+            inp = sanatize_text(reaction.message.embeds[0].fields[0].value)
 
             with open("training/intents.json", "r+") as jsonFile2:
                 tmp = json.load(jsonFile2)
