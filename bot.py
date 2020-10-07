@@ -145,8 +145,7 @@ def main():
                     except NotFound:
                         embed.set_author(name=f'*{user}*')
 
-                    embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
-                    embed.insert_field_at(index=0, name='___', value=comment.id)
+                    embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]", value=comment.id)
                     await realtime_ch.send(embed=embed)
 
                     if tag == 'WARNING':
@@ -180,8 +179,7 @@ def main():
                     except NotFound:
                         embed.set_author(name=f'*{user}*')
 
-                    embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}")
-                    embed.insert_field_at(index=0, name='___', value=submission.id)
+                    embed.insert_field_at(index=0, name='f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}"', value=submission.id)
                     await submission_ch.send(embed=embed)
 
                     if submission.author.name in watchlist:
