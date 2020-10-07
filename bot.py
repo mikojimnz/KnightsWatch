@@ -135,7 +135,7 @@ def main():
 
                     embed = discord.Embed(
                         title = comment.submission.title[:255],
-                        description = comment.id,
+                        description = comment.body[:2048],
                         color = color,
                         url = link
                     )
@@ -146,7 +146,7 @@ def main():
                         embed.set_author(name=f'*{user}*')
 
                     embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]")
-                    embed.insert_field_at(index=0, name='Comment', value=comment.body[:2048])
+                    embed.insert_field_at(index=0, name='___', value=comment.id)
                     await realtime_ch.send(embed=embed)
 
                     if tag == 'WARNING':
@@ -169,7 +169,7 @@ def main():
 
                     embed = discord.Embed(
                         title = submission.title[:255],
-                        description = submission.id,
+                        description = submission.link_flair_text,
                         url = f'http://reddit.com{submission.permalink}',
                         color = discord.Colour.greyple()
                     )
@@ -181,7 +181,7 @@ def main():
                         embed.set_author(name=f'*{user}*')
 
                     embed.set_footer(text=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}")
-                    embed.insert_field_at(index=0, name='Flair', value=submission.link_flair_text, inline=True)
+                    embed.insert_field_at(index=0, name='___', value=submission.id)
                     await submission_ch.send(embed=embed)
 
                     if submission.author.name in watchlist:
@@ -208,11 +208,13 @@ def main():
         global ignored
 
         if (cfg['praw']['toolbox']['monitorUsers']):
+            watchlist.clear()
             usernotesJson = json.loads(sub.wiki[cfg['praw']['toolbox']['usernotePage']].content_md)
             decompressed = zlib.decompress(base64.b64decode(usernotesJson['blob']))
             for user in json.loads(decompressed).keys():
                  watchlist.append(user)
 
+        ignored.clear()
         wikiConfig = json.loads(sub.wiki[cfg['praw']['wikiConfig']].content_md)
         ignored = wikiConfig['ignored']
 
@@ -258,6 +260,7 @@ def main():
             print(f'    {len(watchlist)} users in toolbox usernotes')
             await ctx.send(f'Watchlist reloaded with {len(watchlist)} users in toolbox usernotes')
         elif (args[0] == 'ignored'):
+            ignored.clear()
             wikiConfig = json.loads(sub.wiki[cfg['praw']['wikiConfig']].content_md)
             ignored = wikiConfig['ignored']
 
@@ -311,7 +314,7 @@ def main():
             return
 
         async def addData(cat):
-            inp = sanatize_text(reaction.message.embeds[0].fields[0].value)
+            inp = sanatize_text(reaction.message.embeds[0].description)
 
             with open("training/intents.json", "r+") as jsonFile2:
                 tmp = json.load(jsonFile2)
@@ -324,7 +327,7 @@ def main():
             print(f'{reaction.emoji}: {inp}')
 
         async def reactionRemove(rule):
-                id = reaction.message.embeds[0].description
+                id = reaction.message.embeds[0].fields[0].value
 
                 try:
                     item = reddit.submission(id) if (reaction.message.embeds[0].color == discord.Colour.greyple()) else reddit.comment(id)
