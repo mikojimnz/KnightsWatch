@@ -324,18 +324,59 @@ def main():
             await reaction.message.channel.send(f'Comment added to training data: `{inp[:25]}`')
             print(f'{reaction.emoji}: {inp}')
 
-        async def reactionRemove(rule):
-                id = reaction.message.embeds[0].fields[0].value
+        async def reaction_remove(rule):
+            id = reaction.message.embeds[0].fields[0].value
 
-                try:
-                    item = reddit.submission(id) if (reaction.message.embeds[0].color == discord.Colour.greyple()) else reddit.comment(id)
-                    item.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {rule + 1}')
-                    reply = item.mod.send_removal_message(title='ignored', type='public', message=f'Removed. Reason:\n> {sub.rules[rule]}')
-                    reply.mod.lock()
+            try:
+                item = reddit.submission(id) if (reaction.message.embeds[0].color == discord.Colour.greyple()) else reddit.comment(id)
+                item.mod.remove(spam=False, mod_note=f'KnightsWatch Removal - Rule {rule + 1}')
+                reply = item.mod.send_removal_message(title='ignored', type='public', message=f'Removed. Reason:\n> {sub.rules[rule]}')
+                reply.mod.lock()
 
-                    await reaction.message.channel.send(f'Removed {id} for `{sub.rules[rule]}`')
-                except Exception as e:
-                    await reaction.message.channel.send(f'Error: `{e}`')
+                await reaction.message.channel.send(f'Removed {id} for `{sub.rules[rule]}`')
+            except Exception as e:
+                await reaction.message.channel.send(f'Error: `{e}`')
+
+        async def reaction_lock():
+            id = reaction.message.embeds[0].fields[0].value
+
+            try:
+                item = reddit.submission(id) if (reaction.message.embeds[0].color == discord.Colour.greyple()) else reddit.comment(id)
+                item.mod.lock()
+
+                await reaction.message.channel.send(f'Locked `{id}`')
+            except Exception as e:
+                await reaction.message.channel.send(f'Error: `{e}`')
+
+        async def reaction_unlock():
+            id = reaction.message.embeds[0].fields[0].value
+
+            try:
+                item = reddit.submission(id) if (reaction.message.embeds[0].color == discord.Colour.greyple()) else reddit.comment(id)
+                item.mod.unlock()
+
+                await reaction.message.channel.send(f'Unlocked `{id}`')
+            except Exception as e:
+                await reaction.message.channel.send(f'Error: `{e}`')
+
+        async def reaction_nuke():
+            if (reaction.message.embeds[0].color == discord.Colour.greyple()):
+                return
+
+            try:
+                item = reddit.comment(reaction.message.embeds[0].fields[0].value)
+                item.refresh()
+                cnt = len(item.replies.list())
+
+                for reply in item.replies.list():
+
+                    reply.mod.remove()
+
+                item.mod.remove()
+
+                await reaction.message.channel.send(f'Nuked `{item.id}` with {cnt} replies')
+            except Exception as e:
+                await reaction.message.channel.send(f'Error: `{e}`')
 
         if reaction.emoji == cfg['discord']['reactions']['acceptable']:
             await addData(0)
@@ -344,25 +385,31 @@ def main():
         elif reaction.emoji == cfg['discord']['reactions']['warning']:
             await addData(2)
         elif reaction.emoji == "1️⃣":
-            await reactionRemove(0)
+            await reaction_remove(0)
         elif reaction.emoji == "2️⃣":
-            await reactionRemove(1)
+            await reaction_remove(1)
         elif reaction.emoji == "3️⃣":
-            await reactionRemove(2)
+            await reaction_remove(2)
         elif reaction.emoji == "4️⃣":
-            await reactionRemove(3)
+            await reaction_remove(3)
         elif reaction.emoji == "5️⃣":
-            await reactionRemove(4)
+            await reaction_remove(4)
         elif reaction.emoji == "6️⃣":
-            await reactionRemove(5)
+            await reaction_remove(5)
         elif reaction.emoji == "7️⃣":
-            await reactionRemove(6)
+            await reaction_remove(6)
         elif reaction.emoji == "8️⃣":
-            await reactionRemove(7)
+            await reaction_remove(7)
         elif reaction.emoji == "9️⃣":
-            await reactionRemove(8)
+            await reaction_remove(8)
         elif reaction.emoji == "0️⃣":
-            await reactionRemove(9)
+            await reaction_remove(9)
+        elif reaction.emoji == "🔒":
+            await reaction_lock()
+        elif reaction.emoji == "🔓":
+            await reaction_unlock()
+        elif reaction.emoji == "☢️":
+            await reaction_nuke()
         else:
             await reaction.message.channel.send(f'Unknown reaction. Remove reaction to moderate.')
             return
