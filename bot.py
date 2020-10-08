@@ -235,6 +235,24 @@ def main():
         await ctx.message.channel.send("Clearing Exception")
 
     @client.command()
+    async def crowdcontrol(ctx, *args):
+        global sub
+
+        if not args:
+            await ctx.send('No argument found')
+            return
+        elif (isinstance(int(args[0]), int) and (0 <= int(args[0]) <= 3)):
+            try:
+                sub.mod.update(crowd_control_mode=True, crowd_control_level=args[0], crowd_control_chat_level=args[0])
+
+                await ctx.send(f'Crowd Control set to {args[0]}')
+            except Exception as e:
+                await ctx.send(f'Error: `{e}`')
+        else:
+            await ctx.send(f'Invalid argument {args[0]}')
+            return
+
+    @client.command()
     async def ping(ctx):
         await ctx.message.channel.send("Pong!")
 
