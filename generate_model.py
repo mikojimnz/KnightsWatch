@@ -81,7 +81,7 @@ net = tflearn.fully_connected(net, 8)
 net = tflearn.fully_connected(net, len(output[0]), activation="softmax")
 net = tflearn.regression(net)
 
-model = tflearn.DNN(net, tensorboard_verbose=3, tensorboard_dir=f'./logs/{modelName}')
+model = tflearn.DNN(net, tensorboard_verbose=3, tensorboard_dir=f'./logs/{modelName}') if (cfg['model']['enable_log']) else tflearn.DNN(net, tensorboard_verbose=3)
 
 model.fit(training, output, n_epoch=cfg['model']['n_epoch'], batch_size=cfg['model']['batch_size'], show_metric=True)
 model.save("model/model.tflearn")

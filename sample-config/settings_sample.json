@@ -26,6 +26,7 @@
   "model": {
     "batch_size": 8,
     "confidence": 0.7,
+    "enable_log": true,
     "n_epoch": 600
   },
   "praw": {
