@@ -144,6 +144,10 @@ def main():
                         embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
                     except NotFound:
                         embed.set_author(name=f'*{user}*')
+                    except prawcore.exceptions.ServerError:
+                        exceptCnt += 1
+                        print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
+                        sleep(60 * exceptCnt)
 
                     embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]", value=comment.id)
                     await realtime_ch.send(embed=embed)
@@ -178,6 +182,10 @@ def main():
                         embed.set_author(name=f'{user}', icon_url=submission.author.icon_img)
                     except NotFound:
                         embed.set_author(name=f'*{user}*')
+                    except prawcore.exceptions.ServerError:
+                        exceptCnt += 1
+                        print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
+                        sleep(60 * exceptCnt)
 
                     embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}", value=submission.id)
                     await submission_ch.send(embed=embed)
@@ -189,6 +197,10 @@ def main():
                 sys.exit(1)
             except prawcore.exceptions.NotFound:
                 pass
+            except prawcore.exceptions.ServerError:
+                exceptCnt += 1
+                print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
+                sleep(60 * exceptCnt)
             except Exception as e:
                 await client.change_presence(status=discord.Status.idle, activity=discord.Game(name='an exception. Check logs.'))
                 traceback.print_exc()
@@ -230,7 +242,8 @@ def main():
     async def clearexcpt(ctx):
         global exceptCnt
         exceptCnt = 0
-        read_comments.restart()
+        read_comments.cancel()
+        read_comments.start()
         await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
         await ctx.message.channel.send("Clearing Exception")
 
