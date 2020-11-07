@@ -200,13 +200,13 @@ def main():
             except prawcore.exceptions.ServerError:
                 exceptCnt += 1
                 print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
-                sleep(60 * exceptCnt)
+                await asyncio.sleep(60 * exceptCnt)
             except Exception as e:
                 await client.change_presence(status=discord.Status.idle, activity=discord.Game(name='an exception. Check logs.'))
                 traceback.print_exc()
                 exceptCnt += 1
                 print(f'Exception #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
-                sleep(60 * exceptCnt)
+                await asyncio.sleep(60 * exceptCnt)
 
             await asyncio.sleep(1)
 
@@ -236,7 +236,12 @@ def main():
         sub = reddit.subreddit(cfg['praw']['sub'])
 
         cprint(f'    Discord connection established, logged in as {client.user}', 'green')
-        read_comments.start()
+
+        try:
+            read_comments.start()
+        except RuntimeError:
+            read_comments.cancel()
+            read_comments.start()
 
     @client.command()
     async def clearexcpt(ctx):
