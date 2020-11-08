@@ -104,6 +104,83 @@ def main():
         userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
         submission_ch = client.get_channel(cfg['discord']['channels']['submissions'])
 
+        async def createEmbed(item=None):
+            user = f'({item.author.name})' if (item.author.name in watchlist) else item.author.name
+
+            if user in ignored: return None
+
+            if type(item) == praw.models.reddit.comment.Comment:
+                inp = sanatize_text(item.body)
+
+                if len(inp) <= 0: return None
+
+                results = model.predict([bag_of_words(inp, words)])[0]
+                results_index = numpy.argmax(results)
+                tag = labels[results_index].upper()
+                confidence = results[results_index] * 100
+
+                if (results[results_index] < cfg['model']['confidence']):
+                    color = discord.Colour.purple()
+                elif tag == 'WARNING':
+                    color = discord.Colour.red()
+                elif tag == 'NEUTRAL':
+                    color = discord.Colour.lighter_gray()
+                else:
+                    color = discord.Colour.green()
+
+                embed = discord.Embed(
+                    title = item.submission.title[:255],
+                    description = item.body[:2048],
+                    color = color,
+                    url = f'http://reddit.com{item.permalink}'
+                )
+
+                try:
+                    embed.set_author(name=f'{user}', icon_url=item.author.icon_img)
+                except NotFound:
+                    embed.set_author(name=f'*{user}*')
+                except prawcore.exceptions.ServerError:
+                    exceptCnt += 1
+                    print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
+                    sleep(60 * exceptCnt)
+
+                embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}. [{confidence:0.2f}%]", value=item.id)
+
+                if tag == 'WARNING':
+                    await elevated_ch.send(embed=embed)
+
+                if (results[results_index] < cfg['model']['confidence']):
+                    await unsure_ch.send(embed=embed)
+
+                if (cfg['debug']['outputResults']):
+                    print(f'\n{inp}')
+                    cprint(f'\n    [{confidence:0.3f}% {tag}]', color[classification])
+                    print(f'    By: {user}\n    {link}\n')
+
+            else:
+                embed = discord.Embed(
+                    title = item.title[:255],
+                    description = item.link_flair_text,
+                    url = f'http://reddit.com{item.permalink}',
+                    color = discord.Colour.greyple()
+                )
+
+                try:
+                    embed.set_author(name=f'{user}', icon_url=item.author.icon_img)
+                except NotFound:
+                    embed.set_author(name=f'*{user}*')
+                except prawcore.exceptions.ServerError:
+                    exceptCnt += 1
+                    print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
+                    sleep(60 * exceptCnt)
+
+                embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}", value=item.id)
+
+            if item.author.name in watchlist:
+                await userWatch_ch.send(embed=embed)
+
+            return embed;
+
         print(f'    {len(watchlist)} users in toolbox usernotes\n    {len(ignored)} users being ignored.')
         cprint("\n    Comment Stream Ready\n", 'green')
         await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
@@ -114,116 +191,24 @@ def main():
                     if comment is None:
                         break
 
-                    user = f'({comment.author.name})' if (comment.author.name in watchlist) else comment.author.name
-                    inp = sanatize_text(comment.body)
-
-                    if (len(inp) <= 0) or (user in ignored):
-                        continue
-
-                    results = model.predict([bag_of_words(inp, words)])[0]
-                    results_index = numpy.argmax(results)
-                    tag = labels[results_index].upper()
-                    confidence = results[results_index] * 100
-
-                    if (results[results_index] < cfg['model']['confidence']):
-                        color = discord.Colour.purple()
-                    elif tag == 'WARNING':
-                        color = discord.Colour.red()
-                    elif tag == 'NEUTRAL':
-                        color = discord.Colour.lighter_gray()
-                    else:
-                        color = discord.Colour.green()
-
-                    embed = discord.Embed(
-                        title = comment.submission.title[:255],
-                        description = comment.body[:2048],
-                        color = color,
-                        url = f'http://reddit.com{comment.permalink}'
-                    )
-
-                    try:
-                        embed.set_author(name=f'{user}', icon_url=comment.author.icon_img)
-                    except NotFound:
-                        embed.set_author(name=f'*{user}*')
-                    except prawcore.exceptions.ServerError:
-                        exceptCnt += 1
-                        print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
-                        sleep(60 * exceptCnt)
-
-                    embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(comment.created_utc))}. [{confidence:0.2f}%]", value=comment.id)
+                    embed = await createEmbed(comment)
+                    if embed == None: continue
                     await realtime_ch.send(embed=embed)
-
-                    if tag == 'WARNING':
-                        await elevated_ch.send(embed=embed)
-
-                    if comment.author.name in watchlist:
-                        await userWatch_ch.send(embed=embed)
-
-                    if (results[results_index] < cfg['model']['confidence']):
-                        await unsure_ch.send(embed=embed)
-
-                    if (cfg['debug']['outputResults']):
-                        print(f'\n{inp}')
-                        cprint(f'\n    [{confidence:0.3f}% {tag}]', color[classification])
-                        print(f'    By: {user}\n    {link}\n')
 
                 for submission in submissionStream:
                     if submission is None:
                         break
 
-                    embed = discord.Embed(
-                        title = submission.title[:255],
-                        description = submission.link_flair_text,
-                        url = f'http://reddit.com{submission.permalink}',
-                        color = discord.Colour.greyple()
-                    )
-                    user = f'({submission.author.name})' if (submission.author.name in watchlist) else submission.author.name
-
-                    try:
-                        embed.set_author(name=f'{user}', icon_url=submission.author.icon_img)
-                    except NotFound:
-                        embed.set_author(name=f'*{user}*')
-                    except prawcore.exceptions.ServerError:
-                        exceptCnt += 1
-                        print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
-                        sleep(60 * exceptCnt)
-
-                    embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(submission.created_utc))}", value=submission.id)
+                    embed = await createEmbed(submission)
+                    if embed == None: continue
                     await submission_ch.send(embed=embed)
-
-                    if submission.author.name in watchlist:
-                        await userWatch_ch.send(embed=embed)
 
                 for item in modQueueStream:
                     if item is None:
                         break
 
-                    if type(item) == praw.models.reddit.comment.Comment:
-                        embed = discord.Embed(
-                            title = item.submission.title[:255],
-                            description = item.body[:2048],
-                            url = f'http://reddit.com{item.permalink}'
-                        )
-                    else:
-                        embed = discord.Embed(
-                            title = item.title[:255],
-                            description = item.link_flair_text,
-                            url = f'http://reddit.com{item.permalink}',
-                            color = discord.Colour.greyple()
-                        )
-
-                    user = f'({item.author.name})' if (item.author.name in watchlist) else item.author.name
-
-                    try:
-                        embed.set_author(name=f'{user}', icon_url=item.author.icon_img)
-                    except NotFound:
-                        embed.set_author(name=f'*{user}*')
-                    except prawcore.exceptions.ServerError:
-                        exceptCnt += 1
-                        print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
-                        sleep(60 * exceptCnt)
-
-                    embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}", value=item.id)
+                    embed = await createEmbed(item)
+                    if embed == None: continue
                     await modQueue_ch.send(embed=embed)
 
             except KeyboardInterrupt:
