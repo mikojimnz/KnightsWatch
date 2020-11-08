@@ -96,7 +96,9 @@ def main():
         await client.wait_until_ready()
         commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
         submissionStream = sub.stream.submissions(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
+        modQueueStream = sub.mod.modqueue(limit=None)
         elevated_ch = client.get_channel(cfg['discord']['channels']['elevated'])
+        modQueue_ch = client.get_channel(cfg['discord']['channels']['modQueue'])
         realtime_ch = client.get_channel(cfg['discord']['channels']['realtime'])
         unsure_ch = client.get_channel(cfg['discord']['channels']['unsure'])
         userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
@@ -113,7 +115,6 @@ def main():
                         break
 
                     user = f'({comment.author.name})' if (comment.author.name in watchlist) else comment.author.name
-                    link = f'http://reddit.com{comment.permalink}'
                     inp = sanatize_text(comment.body)
 
                     if (len(inp) <= 0) or (user in ignored):
@@ -137,7 +138,7 @@ def main():
                         title = comment.submission.title[:255],
                         description = comment.body[:2048],
                         color = color,
-                        url = link
+                        url = f'http://reddit.com{comment.permalink}'
                     )
 
                     try:
@@ -192,6 +193,38 @@ def main():
 
                     if submission.author.name in watchlist:
                         await userWatch_ch.send(embed=embed)
+
+                for item in modQueueStream:
+                    if item is None:
+                        break
+
+                    if type(item) == praw.models.reddit.comment.Comment:
+                        embed = discord.Embed(
+                            title = item.submission.title[:255],
+                            description = item.body[:2048],
+                            url = f'http://reddit.com{item.permalink}'
+                        )
+                    else:
+                        embed = discord.Embed(
+                            title = item.title[:255],
+                            description = item.link_flair_text,
+                            url = f'http://reddit.com{item.permalink}',
+                            color = discord.Colour.greyple()
+                        )
+
+                    user = f'({item.author.name})' if (item.author.name in watchlist) else item.author.name
+
+                    try:
+                        embed.set_author(name=f'{user}', icon_url=item.author.icon_img)
+                    except NotFound:
+                        embed.set_author(name=f'*{user}*')
+                    except prawcore.exceptions.ServerError:
+                        exceptCnt += 1
+                        print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
+                        sleep(60 * exceptCnt)
+
+                    embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}", value=item.id)
+                    await modQueue_ch.send(embed=embed)
 
             except KeyboardInterrupt:
                 sys.exit(1)

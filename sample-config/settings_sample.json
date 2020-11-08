@@ -7,6 +7,7 @@
     "clientID": "",
     "channels": {
       "elevated": 000,
+      "modQueue": 000,
       "realtime": 000,
       "submissions": 000,
       "unsure": 000,
