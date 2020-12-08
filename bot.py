@@ -96,13 +96,15 @@ def main():
         await client.wait_until_ready()
         commentStream = sub.stream.comments(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
         submissionStream = sub.stream.submissions(skip_existing=cfg['praw']['skipExisting'], pause_after=-1)
-        modQueueStream = sub.mod.modqueue(limit=None)
+        queueStream = sub.mod.modqueue(limit=None)
+        reportsStream = sub.mod.reports(limit=None)
         elevated_ch = client.get_channel(cfg['discord']['channels']['elevated'])
         modQueue_ch = client.get_channel(cfg['discord']['channels']['modQueue'])
         realtime_ch = client.get_channel(cfg['discord']['channels']['realtime'])
         unsure_ch = client.get_channel(cfg['discord']['channels']['unsure'])
         userWatch_ch = client.get_channel(cfg['discord']['channels']['userWatch'])
         submission_ch = client.get_channel(cfg['discord']['channels']['submissions'])
+        modQueueIDs = [];
 
         async def createEmbed(item=None):
             user = f'({item.author.name})' if (item.author.name in watchlist) else item.author.name
@@ -111,9 +113,6 @@ def main():
 
             if type(item) == praw.models.reddit.comment.Comment:
                 inp = sanatize_text(item.body)
-
-                if len(inp) <= 0: return None
-
                 results = model.predict([bag_of_words(inp, words)])[0]
                 results_index = numpy.argmax(results)
                 tag = labels[results_index].upper()
@@ -201,12 +200,29 @@ def main():
                     if embed == None: continue
                     await submission_ch.send(embed=embed)
 
-                for item in modQueueStream:
+                for item in queueStream:
                     if item is None: break
 
-                    embed = await createEmbed(item)
-                    if embed == None: continue
-                    await modQueue_ch.send(embed=embed)
+                    if item.id in modQueueIDs:
+                        continue
+                    else:
+                        if len(modQueueIDs) > 1000: modQueueIDs.clear()
+                        modQueueIDs.append(item.id)
+                        embed = await createEmbed(item)
+                        if embed == None: continue
+                        await modQueue_ch.send(embed=embed)
+
+                for report in reportsStream:
+                    if report is None: break
+
+                    if report.id in modQueueIDs:
+                        continue
+                    else:
+                        if len(modQueueIDs) > 1000: modQueueIDs.clear()
+                        modQueueIDs.append(report.id)
+                        embed = await createEmbed(report)
+                        if embed == None: continue
+                        await modQueue_ch.send(embed=embed)
 
             except KeyboardInterrupt:
                 sys.exit(1)
