@@ -137,12 +137,12 @@ def main():
 
                 try:
                     embed.set_author(name=f'{user}', icon_url=item.author.icon_img)
-                except NotFound:
+                except prawcore.exceptions.NotFound:
                     embed.set_author(name=f'*{user}*')
                 except prawcore.exceptions.ServerError:
                     exceptCnt += 1
                     print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
-                    sleep(60 * exceptCnt)
+                    await asyncio.sleep(60 * exceptCnt)
 
                 embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}. [{confidence:0.2f}%]", value=item.id)
 
@@ -167,12 +167,12 @@ def main():
 
                 try:
                     embed.set_author(name=f'{user}', icon_url=item.author.icon_img)
-                except NotFound:
+                except prawcore.exceptions.NotFound:
                     embed.set_author(name=f'*{user}*')
                 except prawcore.exceptions.ServerError:
                     exceptCnt += 1
                     print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds')
-                    sleep(60 * exceptCnt)
+                    await asyncio.sleep(60 * exceptCnt)
 
                 embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}", value=item.id)
 
@@ -188,24 +188,21 @@ def main():
         while not client.is_closed():
             try:
                 for comment in commentStream:
-                    if comment is None:
-                        break
+                    if comment is None: break
 
                     embed = await createEmbed(comment)
                     if embed == None: continue
                     await realtime_ch.send(embed=embed)
 
                 for submission in submissionStream:
-                    if submission is None:
-                        break
+                    if submission is None: break
 
                     embed = await createEmbed(submission)
                     if embed == None: continue
                     await submission_ch.send(embed=embed)
 
                 for item in modQueueStream:
-                    if item is None:
-                        break
+                    if item is None: break
 
                     embed = await createEmbed(item)
                     if embed == None: continue
