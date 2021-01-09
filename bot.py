@@ -276,12 +276,7 @@ async def on_ready():
     sub = reddit.subreddit(cfg['praw']['sub'])
 
     cprint(f'    Discord connection established, logged in as {client.user}', 'green')
-
-    try:
-        read_comments.start()
-    except RuntimeError:
-        read_comments.cancel()
-        read_comments.start()
+    read_comments.start()
 
 @client.command()
 async def restart(ctx):
