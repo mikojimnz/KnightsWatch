@@ -59,9 +59,20 @@ def bag_of_words(s, words):
 
     return numpy.array(bag)
 
-def restart_program():
+def restart_program(exceptCnt):
     python = sys.executable
-    os.execl(python, python, * sys.argv)
+
+    sys.stdout.flush()
+
+    if exceptCnt == -1:
+        print('Restart command recieved')
+        os.execl(python, python, * sys.argv)
+    else:
+        time = int(sys.argv[1]) + 1
+        args = [sys.argv[0], str(time)]
+
+        print(f'Restarting. Exception Count {exceptCnt}')
+        os.execl(python, python, * args)
 
 try:
     nltk.data.find('tokenizers/punkt')
@@ -145,7 +156,7 @@ async def read_comments():
             except prawcore.exceptions.ServerError:
                 exceptCnt += 1
                 traceback.print_exc()
-                await asyncio.sleep(60 * exceptCnt)
+                restart_program(exceptCnt)
 
             embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}. [{confidence:0.2f}%]", value=item.id)
 
@@ -176,7 +187,7 @@ async def read_comments():
             except prawcore.exceptions.ServerError:
                 exceptCnt += 1
                 traceback.print_exc()
-                await asyncio.sleep(60 * exceptCnt)
+                restart_program(exceptCnt)
 
             embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}", value=item.id)
 
@@ -238,14 +249,13 @@ async def read_comments():
         except prawcore.exceptions.ServerError as e:
             exceptCnt += 1
             traceback.print_exc()
-            print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds Line 237')
             await asyncio.sleep(60 * exceptCnt)
+            restart_program(exceptCnt)
         except Exception as e:
             exceptCnt += 1
             traceback.print_exc()
-            print(f'Exception #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds Line 248')
             await client.change_presence(status=discord.Status.idle, activity=discord.Game(name='an exception. Check logs.'))
-            await asyncio.sleep(60 * exceptCnt)
+            restart_program(exceptCnt)
 
         await asyncio.sleep(1)
 
@@ -280,7 +290,7 @@ async def on_ready():
 @client.command()
 async def restart(ctx):
     await ctx.message.channel.send("Restarting Bot")
-    restart_program()
+    restart_program(-1)
 
 @client.command()
 async def crowdcontrol(ctx, *args):
@@ -483,5 +493,11 @@ async def on_raw_reaction_add(payload):
     else:
         await channel.send(f'Unknown reaction. Remove reaction to moderate.')
         return
+if len(sys.argv) == 2 and re.search(r'^\d+$', sys.argv[1]):
+    arg = int(sys.argv[1])
+    exceptCnt += arg
+    delay = arg * 60
+    cprint(f'Prior exception recieved, delaying execution for {arg} minute(s)', 'red')
+    sleep(delay)
 
 client.run(cfg['discord']['clientID'])
