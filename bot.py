@@ -455,25 +455,25 @@ async def on_raw_reaction_add(payload):
     elif payload.emoji.name == u'❌':
         await addData(2)
     elif payload.emoji.name == u'0️⃣':
-        await reaction_remove(0)
-    elif payload.emoji.name == u'1️⃣':
-        await reaction_remove(1)
-    elif payload.emoji.name == u'2️⃣':
-        await reaction_remove(2)
-    elif payload.emoji.name == u'3️⃣':
-        await reaction_remove(3)
-    elif payload.emoji.name == u'4️⃣':
-        await reaction_remove(4)
-    elif payload.emoji.name == u'5️⃣':
-        await reaction_remove(5)
-    elif payload.emoji.name == u'6️⃣':
-        await reaction_remove(6)
-    elif payload.emoji.name == u'7️⃣':
-        await reaction_remove(7)
-    elif payload.emoji.name == u'8️⃣':
-        await reaction_remove(8)
-    elif payload.emoji.name == u'9️⃣':
         await reaction_remove(9)
+    elif payload.emoji.name == u'1️⃣':
+        await reaction_remove(0)
+    elif payload.emoji.name == u'2️⃣':
+        await reaction_remove(1)
+    elif payload.emoji.name == u'3️⃣':
+        await reaction_remove(2)
+    elif payload.emoji.name == u'4️⃣':
+        await reaction_remove(3)
+    elif payload.emoji.name == u'5️⃣':
+        await reaction_remove(4)
+    elif payload.emoji.name == u'6️⃣':
+        await reaction_remove(5)
+    elif payload.emoji.name == u'7️⃣':
+        await reaction_remove(6)
+    elif payload.emoji.name == u'8️⃣':
+        await reaction_remove(7)
+    elif payload.emoji.name == u'9️⃣':
+        await reaction_remove(8)
     elif payload.emoji.name == u'🔒':
         await reaction_lock()
     elif payload.emoji.name == u'🔓':
