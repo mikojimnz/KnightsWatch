@@ -109,8 +109,6 @@ async def read_comments():
     submission_ch = client.get_channel(cfg['discord']['channels']['submissions'])
     modQueueIDs = []
 
-    print("loop create")
-
     async def createEmbed(item=None):
         user = f'({item.author.name})' if (item.author.name in watchlist) else item.author.name
 
@@ -146,7 +144,7 @@ async def read_comments():
                 embed.set_author(name=f'*{user}*')
             except prawcore.exceptions.ServerError:
                 exceptCnt += 1
-                print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds Line 143')
+                traceback.print_exc()
                 await asyncio.sleep(60 * exceptCnt)
 
             embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}. [{confidence:0.2f}%]", value=item.id)
@@ -177,7 +175,7 @@ async def read_comments():
                 embed.set_author(name=f'*{user}*')
             except prawcore.exceptions.ServerError:
                 exceptCnt += 1
-                print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds Line 176')
+                traceback.print_exc()
                 await asyncio.sleep(60 * exceptCnt)
 
             embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}", value=item.id)
@@ -237,15 +235,16 @@ async def read_comments():
         except prawcore.exceptions.NotFound:
             print("prawcore.exceptions.NotFound Line 233")
             pass
-        except prawcore.exceptions.ServerError:
+        except prawcore.exceptions.ServerError as e:
             exceptCnt += 1
+            traceback.print_exc()
             print(f'Reddit Server Error #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds Line 237')
             await asyncio.sleep(60 * exceptCnt)
         except Exception as e:
-            await client.change_presence(status=discord.Status.idle, activity=discord.Game(name='an exception. Check logs.'))
-            traceback.print_exc()
             exceptCnt += 1
-            print(f'Exception #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds Line 240')
+            traceback.print_exc()
+            print(f'Exception #{exceptCnt}\nSleeping for {60 * exceptCnt} seconds Line 248')
+            await client.change_presence(status=discord.Status.idle, activity=discord.Game(name='an exception. Check logs.'))
             await asyncio.sleep(60 * exceptCnt)
 
         await asyncio.sleep(1)
