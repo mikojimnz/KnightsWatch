@@ -12,11 +12,6 @@
       "submissions": 000,
       "unsure": 000,
       "userWatch": 000
-    },
-    "reactions": {
-      "acceptable": "✅",
-      "neutral": "🆗",
-      "warning": "❌"
     }
   },
   "keyBindings": {
