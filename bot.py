@@ -68,8 +68,7 @@ def restart_program(exceptCnt):
         print('Restart command recieved')
         os.execl(python, python, * sys.argv)
     else:
-        time = int(sys.argv[1]) + 1
-        args = [sys.argv[0], str(time)]
+        args = [sys.argv[0], str(exceptCnt)]
 
         print(f'Restarting. Exception Count {exceptCnt}')
         os.execl(python, python, * args)
