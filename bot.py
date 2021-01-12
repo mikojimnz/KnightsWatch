@@ -65,8 +65,9 @@ def restart_program(exceptCnt):
     sys.stdout.flush()
 
     if exceptCnt == -1:
+        args = [sys.argv[0]]
         print('Restart command recieved')
-        os.execl(python, python, * sys.argv)
+        os.execl(python, python, * args)
     else:
         args = [sys.argv[0], str(exceptCnt)]
 
