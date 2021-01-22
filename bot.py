@@ -201,7 +201,6 @@ async def read_comments():
     await client.change_presence(status=discord.Status.online, activity=discord.Game(name='with Reddit'))
 
     while not client.is_closed():
-        # print("looping")
         try:
             for comment in commentStream:
                 if comment is None: break
@@ -285,7 +284,12 @@ async def on_ready():
     sub = reddit.subreddit(cfg['praw']['sub'])
 
     cprint(f'    Discord connection established, logged in as {client.user}', 'green')
-    read_comments.start()
+
+    try:
+        read_comments.start()
+    except Exception as e:
+        print(e)
+        restart_program(-1)
 
 @client.command()
 async def restart(ctx):
