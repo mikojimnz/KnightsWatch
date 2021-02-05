@@ -14,17 +14,6 @@
       "userWatch": 000
     }
   },
-  "keyBindings": {
-    "acceptable": "a",
-    "neutral": "n",
-    "warning": "w"
-  },
-  "model": {
-    "batch_size": 8,
-    "confidence": 0.7,
-    "enable_log": true,
-    "n_epoch": 600
-  },
   "praw": {
     "cred": "",
     "skipExisting": true,

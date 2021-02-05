@@ -2,8 +2,6 @@ import asyncio
 import base64
 import discord
 import json
-import nltk
-import numpy
 import os
 import pickle
 import praw
@@ -12,14 +10,11 @@ import random
 import re
 import signal
 import sys
-import tensorflow
-import tflearn
 import time
 import traceback
 import zlib
 
 from discord.ext import commands, tasks
-from nltk.stem.lancaster import LancasterStemmer
 from termcolor import colored, cprint
 from time import sleep
 
@@ -31,33 +26,6 @@ exceptCnt = 0
 
 with open("settings.json") as jsonFile1:
     cfg = json.load(jsonFile1)
-
-with open('training/intents.json') as jsonFile2:
-    data = json.load(jsonFile2)
-
-with open("model/data.pickle", "rb") as p:
-    words, labels, training, output = pickle.load(p)
-
-def sanatize_text(input):
-    raw = " ".join(input.lower().splitlines())
-    raw = re.sub(r'(?i)\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\s()<>{}\[\]]+|\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\))+(?:\([^\s()]*?\([^\s()]+\)[^\s()]*?\)|\([^\s]+?\)|[^\s`!()\[\]{};:\'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\b/?(?!@)))', ' ', raw, flags=re.MULTILINE)
-    raw = re.sub(r'([\'’])', '', raw)
-    raw = re.sub(r'[^a-z\s]', ' ', raw)
-    raw = re.sub(r'[ ]+', ' ', raw.strip())
-    return re.sub(r'( x b )|( nbsp )', ' ', raw)
-
-def bag_of_words(s, words):
-    bag = [0 for _ in range(len(words))]
-
-    s_words = nltk.word_tokenize(s)
-    s_words = [stemmer.stem(word.lower()) for word in s_words]
-
-    for se in s_words:
-        for i, w in enumerate(words):
-            if w == se:
-                bag[i] = 1
-
-    return numpy.array(bag)
 
 def restart_program(exceptCnt):
     python = sys.executable
@@ -74,28 +42,7 @@ def restart_program(exceptCnt):
         print(f'Restarting. Exception Count {exceptCnt}')
         os.execl(python, python, * args)
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-
-stemmer = LancasterStemmer()
-tensorflow.reset_default_graph()
-net = tflearn.input_data(shape=[None, len(training[0])])
-net = tflearn.fully_connected(net, 8)
-net = tflearn.fully_connected(net, 8)
-net = tflearn.fully_connected(net, len(output[0]), activation="softmax")
-net = tflearn.regression(net)
-model = tflearn.DNN(net)
-model.load("model/model.tflearn")
-
 client = commands.Bot(command_prefix=cfg['discord']['cmdPrefix'])
-
-color = {
-"ACCEPTABLE": "green",
-"NEUTRAL": "white",
-"WARNING": "red"
-}
 
 os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -126,25 +73,10 @@ async def read_comments():
         if user in ignored: return None
 
         if type(item) == praw.models.reddit.comment.Comment:
-            inp = sanatize_text(item.body)
-            results = model.predict([bag_of_words(inp, words)])[0]
-            results_index = numpy.argmax(results)
-            tag = labels[results_index].upper()
-            confidence = results[results_index] * 100
-
-            if (results[results_index] < cfg['model']['confidence']):
-                color = discord.Colour.purple()
-            elif tag == 'WARNING':
-                color = discord.Colour.red()
-            elif tag == 'NEUTRAL':
-                color = discord.Colour.lighter_gray()
-            else:
-                color = discord.Colour.green()
-
             embed = discord.Embed(
                 title = item.submission.title[:255],
                 description = item.body[:2048],
-                color = color,
+                color = discord.Colour.lighter_gray(),
                 url = f'http://reddit.com{item.permalink}'
             )
 
@@ -158,13 +90,7 @@ async def read_comments():
                 traceback.print_exc()
                 restart_program(exceptCnt)
 
-            embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}. [{confidence:0.2f}%]", value=item.id)
-
-            if tag == 'WARNING':
-                await elevated_ch.send(embed=embed)
-
-            if (results[results_index] < cfg['model']['confidence']):
-                await unsure_ch.send(embed=embed)
+            embed.insert_field_at(index=0, name=f"{time.strftime('%b %d, %Y - %H:%M:%S UTC',  time.gmtime(item.created_utc))}.", value=item.id)
 
             if (cfg['debug']['outputResults']):
                 print(f'\n{inp}')
@@ -395,19 +321,6 @@ async def on_raw_reaction_add(payload):
         await channel.send(f'Comment has already been moderated.')
         return
 
-    async def addData(cat):
-        inp = sanatize_text(embed.description)
-
-        with open("training/intents.json", "r+") as jsonFile2:
-            tmp = json.load(jsonFile2)
-            tmp['intents'][cat]['patterns'].append(inp)
-            jsonFile2.seek(0)
-            json.dump(tmp, jsonFile2)
-            jsonFile2.truncate()
-
-        await channel.send(f'Comment added to training data: `{inp[:25]}`')
-        print(f'{payload.emoji}: {inp}')
-
     async def reaction_remove(rule):
         id = embed.fields[0].value
 
@@ -462,13 +375,7 @@ async def on_raw_reaction_add(payload):
         except Exception as e:
             await channel.send(f'Error: `{e}`')
 
-    if payload.emoji.name == u'✅':
-        await addData(0)
-    elif payload.emoji.name == u'🆗':
-        await addData(1)
-    elif payload.emoji.name == u'❌':
-        await addData(2)
-    elif payload.emoji.name == u'0️⃣':
+    if payload.emoji.name == u'0️⃣':
         await reaction_remove(9)
     elif payload.emoji.name == u'1️⃣':
         await reaction_remove(0)
