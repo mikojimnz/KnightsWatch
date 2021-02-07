@@ -20,8 +20,8 @@ multidict==4.7.6
 nltk==3.4.5
 numpy==1.19.1
 Pillow==7.2.0
-praw==7.1.0
-prawcore==1.4.0
+praw==7.1.4
+prawcore==1.5.0
 protobuf==3.12.2
 raw-zlib==0.1.14
 requests==2.24.0
@@ -32,7 +32,7 @@ tensorflow-estimator==1.14.0
 termcolor==1.1.0
 tflearn==0.3.2
 typing-extensions==3.7.4.3
-update-checker==0.17
+update-checker==0.18.0
 urllib3==1.25.9
 websocket-client==0.57.0
 Werkzeug==1.0.1
